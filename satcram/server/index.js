@@ -12,6 +12,7 @@ const __dirname = dirname(fileURLToPath(import.meta.url))
 const PORT = process.env.PORT || 3000
 const apiKey = process.env.OPENAI_API_KEY
 const clerkSecretKey = process.env.CLERK_SECRET_KEY
+const clerkPublishableKey = process.env.CLERK_PUBLISHABLE_KEY || process.env.VITE_CLERK_PUBLISHABLE_KEY
 
 const app = express()
 
@@ -41,10 +42,10 @@ app.use(express.json({ limit: '15mb' })) // Restrict JSON payload size to 15MB
 // Optional Clerk auth check middleware scoped exclusively to /api routes
 let clerkAuthMiddleware = (_req, _res, next) => next()
 
-if (clerkSecretKey) {
+if (clerkSecretKey && clerkPublishableKey) {
   try {
     const { clerkMiddleware, getAuth } = await import('@clerk/express')
-    app.use('/api', clerkMiddleware())
+    app.use('/api', clerkMiddleware({ secretKey: clerkSecretKey, publishableKey: clerkPublishableKey }))
     clerkAuthMiddleware = (req, res, next) => {
       // Enforce auth if REQUIRE_AUTH=true, otherwise allow guests (protected by rate limits)
       if (process.env.REQUIRE_AUTH === 'true') {
@@ -58,6 +59,8 @@ if (clerkSecretKey) {
   } catch (err) {
     console.warn('[Clerk] Could not load @clerk/express middleware:', err.message)
   }
+} else if (clerkSecretKey) {
+  console.warn('[Clerk] Server authentication is disabled because CLERK_PUBLISHABLE_KEY is not configured. API requests will use guest/IP limits.')
 }
 
 // Run after optional Clerk middleware so signed-in users receive an account-based limit.
