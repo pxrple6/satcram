@@ -1,5 +1,5 @@
 import React, { useMemo } from 'react'
-import { Link } from 'react-router-dom'
+import { Link } from '../../lib/router.jsx'
 import { LineChart, Line, XAxis, YAxis, Tooltip, ResponsiveContainer, CartesianGrid } from 'recharts'
 import { useStore, useProfile } from '../../App.jsx'
 import { estimateScore } from '../../lib/scoreEstimator.js'

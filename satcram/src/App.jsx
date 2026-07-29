@@ -1,6 +1,6 @@
 import './index.css'
 import React, { createContext, useContext } from 'react'
-import { Routes, Route } from 'react-router-dom'
+import { useLocation } from './lib/router.jsx'
 import { useAuth, useUser } from '@clerk/react'
 
 import AppLayout from './components/Layout/AppLayout.jsx'
@@ -54,23 +54,28 @@ function AppProviders({ children }) {
 }
 
 export default function App() {
+  const { pathname } = useLocation()
+  let page
+
+  if (pathname === '/') page = <Home />
+  else if (pathname.startsWith('/login')) page = <Login />
+  else if (pathname.startsWith('/signup')) page = <SignUp />
+  else {
+    const pages = {
+      '/app': <Dashboard />,
+      '/app/upload': <MistakeUpload />,
+      '/app/dna': <MistakeDNA />,
+      '/app/plan': <StudyPlan />,
+      '/app/practice': <PracticeDeck />,
+      '/app/tutor': <SocraticTutor />,
+      '/app/journal': <MistakeJournal />,
+    }
+    page = <AppLayout>{pages[pathname] || <Dashboard />}</AppLayout>
+  }
+
   return (
     <AppProviders>
-      <Routes>
-        <Route path="/" element={<Home />} />
-        <Route path="/login/*" element={<Login />} />
-        <Route path="/signup/*" element={<SignUp />} />
-
-        <Route path="/app" element={<AppLayout />}>
-          <Route index element={<Dashboard />} />
-          <Route path="upload" element={<MistakeUpload />} />
-          <Route path="dna" element={<MistakeDNA />} />
-          <Route path="plan" element={<StudyPlan />} />
-          <Route path="practice" element={<PracticeDeck />} />
-          <Route path="tutor" element={<SocraticTutor />} />
-          <Route path="journal" element={<MistakeJournal />} />
-        </Route>
-      </Routes>
+      {page}
     </AppProviders>
   )
 }

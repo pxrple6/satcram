@@ -1,5 +1,5 @@
 import React from 'react'
-import { Link } from 'react-router-dom'
+import { Link } from '../../lib/router.jsx'
 import { Show, SignInButton, SignUpButton } from '@clerk/react'
 
 export default function SiteHeader() {

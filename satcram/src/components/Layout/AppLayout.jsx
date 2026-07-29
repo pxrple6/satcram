@@ -1,10 +1,9 @@
 import React from 'react'
-import { Outlet } from 'react-router-dom'
 import { Show, SignInButton, UserButton } from '@clerk/react'
 import Sidebar from './Sidebar.jsx'
 import { useStore, useUsage, useProfile } from '../../App.jsx'
 
-export default function AppLayout() {
+export default function AppLayout({ children }) {
   const store = useStore()
   const usage = useUsage()
   const { isSignedIn } = useProfile()
@@ -45,7 +44,7 @@ export default function AppLayout() {
           </Show>
         </header>
         <div className="main-col">
-          <Outlet />
+          {children}
         </div>
       </div>
     </div>

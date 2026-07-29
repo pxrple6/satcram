@@ -1,5 +1,5 @@
 import React, { useMemo } from 'react'
-import { Link } from 'react-router-dom'
+import { Link } from '../../lib/router.jsx'
 import { useStore, useProfile } from '../../App.jsx'
 import { buildStudyPlan } from '../../lib/studyPlan.js'
 import { SAT_DATES, daysUntil, formatCountdown } from '../../data/satDates.js'

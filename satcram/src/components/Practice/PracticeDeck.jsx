@@ -1,5 +1,5 @@
 import React, { useMemo, useState } from 'react'
-import { Link, useSearchParams } from 'react-router-dom'
+import { Link, useSearchParams } from '../../lib/router.jsx'
 import { useStore } from '../../App.jsx'
 import RichText from '../RichText.jsx'
 import { SUBJECT_COLORS } from '../../data/domains.js'

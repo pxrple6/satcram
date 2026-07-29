@@ -1,5 +1,5 @@
 import React from 'react'
-import { Link, NavLink } from 'react-router-dom'
+import { Link, NavLink } from '../../lib/router.jsx'
 
 const NAV = [
   { to: '/app', label: 'Dashboard', end: true },

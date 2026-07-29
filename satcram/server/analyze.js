@@ -27,6 +27,8 @@ If images are attached, read the question directly from them — do not assume t
 provided question text is complete on its own. Use the subject/topic hints when provided,
 but override them if the image clearly shows a different topic.`
 
+import { recordOpenAIUsage } from './usageBudget.js'
+
 /**
  * @param {object} input
  * @param {string} apiKey
@@ -58,13 +60,13 @@ export async function analyzeWithOpenAI(input, apiKey) {
       'Content-Type': 'application/json',
     },
     body: JSON.stringify({
-      model: process.env.OPENAI_MODEL || 'gpt-4o-mini',
+      model: 'gpt-5.6-terra',
       response_format: { type: 'json_object' },
       messages: [
         { role: 'system', content: SYSTEM_PROMPT },
         { role: 'user', content: userContent },
       ],
-      temperature: 0.2,
+      reasoning_effort: 'low',
     }),
   })
 
@@ -86,6 +88,7 @@ export async function analyzeWithOpenAI(input, apiKey) {
     confidence: parsed.confidence,
     estimatedSkill: Math.round(Number(parsed.estimatedSkill)),
     pattern: parsed.pattern ?? null,
+    usage: data.usage,
   }
 }
 
@@ -106,7 +109,7 @@ export function readJsonBody(req) {
   })
 }
 
-export async function handleAnalyzeRequest(req, res, apiKey) {
+export async function handleAnalyzeRequest(req, res, apiKey, usageKey) {
   if (!apiKey) {
     res.statusCode = 503
     res.setHeader('Content-Type', 'application/json')
@@ -117,9 +120,11 @@ export async function handleAnalyzeRequest(req, res, apiKey) {
   try {
     const body = await readJsonBody(req)
     const result = await analyzeWithOpenAI(body, apiKey)
+    const { usage, ...analysis } = result
+    if (usageKey) recordOpenAIUsage(usageKey, usage)
     res.statusCode = 200
     res.setHeader('Content-Type', 'application/json')
-    res.end(JSON.stringify(result))
+    res.end(JSON.stringify(analysis))
   } catch (err) {
     console.error('[analyze]', err)
     res.statusCode = 500

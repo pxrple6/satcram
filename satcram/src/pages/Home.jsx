@@ -1,5 +1,5 @@
 import React from 'react'
-import { Link } from 'react-router-dom'
+import { Link } from '../lib/router.jsx'
 import SiteHeader from '../components/Marketing/SiteHeader.jsx'
 import { upcomingSatDates, formatCountdown } from '../data/satDates.js'
 

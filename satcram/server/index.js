@@ -1,9 +1,10 @@
 import express from 'express'
 import helmet from 'helmet'
-import rateLimit from 'express-rate-limit'
+import rateLimit, { ipKeyGenerator } from 'express-rate-limit'
 import { fileURLToPath } from 'url'
 import { dirname, join } from 'path'
 import { loadEnv } from './loadEnv.js'
+import { recordOpenAIUsage, usageLimitFor } from './usageBudget.js'
 
 loadEnv()
 
@@ -30,12 +31,11 @@ const userApiLimiter = rateLimit({
   legacyHeaders: false,
   keyGenerator: (req) => {
     // Key by Clerk User ID when logged in, or client IP when unauthenticated
-    return req.auth?.userId || req.ip
+    return req.auth?.userId || ipKeyGenerator(req.ip)
   },
   message: { error: 'You have reached your limit of AI requests. Please wait 15 minutes before making more requests.' },
 })
 
-app.use('/api/', userApiLimiter)
 app.use(express.json({ limit: '15mb' })) // Restrict JSON payload size to 15MB
 
 // Optional Clerk auth check middleware scoped exclusively to /api routes
@@ -60,6 +60,23 @@ if (clerkSecretKey) {
   }
 }
 
+// Run after optional Clerk middleware so signed-in users receive an account-based limit.
+app.use('/api/', userApiLimiter)
+
+function usageKey(req) {
+  return req.auth?.userId || `ip:${ipKeyGenerator(req.ip)}`
+}
+
+function enforceUsageBudget(req, res, next) {
+  const budget = usageLimitFor(usageKey(req))
+  if (!budget.allowed) {
+    return res.status(429).json({
+      error: `You have reached the $${budget.limitUsd.toFixed(2)} monthly AI usage limit. Please try again next month.`,
+    })
+  }
+  next()
+}
+
 // Input validation helpers
 function validateAnalyzeInput(body) {
   if (!body || typeof body !== 'object') throw new Error('Invalid payload')
@@ -80,7 +97,7 @@ function validateTutorInput(body) {
   }
 }
 
-app.post('/api/analyze', clerkAuthMiddleware, async (req, res) => {
+app.post('/api/analyze', clerkAuthMiddleware, enforceUsageBudget, async (req, res) => {
   if (!apiKey) {
     return res.status(503).json({ error: 'OPENAI_API_KEY is not configured on the server' })
   }
@@ -88,7 +105,9 @@ app.post('/api/analyze', clerkAuthMiddleware, async (req, res) => {
     validateAnalyzeInput(req.body)
     const { analyzeWithOpenAI } = await import('./analyze.js')
     const result = await analyzeWithOpenAI(req.body, apiKey)
-    res.json(result)
+    const { usage, ...analysis } = result
+    recordOpenAIUsage(usageKey(req), usage)
+    res.json(analysis)
   } catch (err) {
     console.error('[analyze error]', err.message)
     const isClientErr = err.message.includes('Maximum') || err.message.includes('Invalid')
@@ -98,7 +117,7 @@ app.post('/api/analyze', clerkAuthMiddleware, async (req, res) => {
   }
 })
 
-app.post('/api/tutor', clerkAuthMiddleware, async (req, res) => {
+app.post('/api/tutor', clerkAuthMiddleware, enforceUsageBudget, async (req, res) => {
   if (!apiKey) {
     return res.status(503).json({ error: 'OPENAI_API_KEY is not configured on the server' })
   }
@@ -106,7 +125,9 @@ app.post('/api/tutor', clerkAuthMiddleware, async (req, res) => {
     validateTutorInput(req.body)
     const { tutorWithOpenAI } = await import('./tutor.js')
     const result = await tutorWithOpenAI(req.body, apiKey)
-    res.json(result)
+    const { usage, ...tutor } = result
+    recordOpenAIUsage(usageKey(req), usage)
+    res.json(tutor)
   } catch (err) {
     console.error('[tutor error]', err.message)
     const isClientErr = err.message.includes('Invalid') || err.message.includes('exceeds')
@@ -141,4 +162,3 @@ app.listen(PORT, () => {
   console.log(`SATcram running on port ${PORT} [NODE_ENV=${process.env.NODE_ENV || 'development'}]`)
   if (!apiKey) console.warn('Warning: OPENAI_API_KEY not set in environment')
 })
-
