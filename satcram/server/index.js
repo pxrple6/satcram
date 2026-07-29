@@ -93,9 +93,7 @@ app.post('/api/analyze', clerkAuthMiddleware, async (req, res) => {
     console.error('[analyze error]', err.message)
     const isClientErr = err.message.includes('Maximum') || err.message.includes('Invalid')
     res.status(isClientErr ? 400 : 500).json({
-      error: process.env.NODE_ENV === 'production' && !isClientErr
-        ? 'AI analysis service encountered an error. Please try again later.'
-        : err.message || 'Analysis failed',
+      error: err.message || 'Analysis failed',
     })
   }
 })
@@ -113,9 +111,7 @@ app.post('/api/tutor', clerkAuthMiddleware, async (req, res) => {
     console.error('[tutor error]', err.message)
     const isClientErr = err.message.includes('Invalid') || err.message.includes('exceeds')
     res.status(isClientErr ? 400 : 500).json({
-      error: process.env.NODE_ENV === 'production' && !isClientErr
-        ? 'AI tutor service encountered an error. Please try again later.'
-        : err.message || 'Tutor request failed',
+      error: err.message || 'Tutor request failed',
     })
   }
 })

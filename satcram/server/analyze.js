@@ -58,7 +58,7 @@ export async function analyzeWithOpenAI(input, apiKey) {
       'Content-Type': 'application/json',
     },
     body: JSON.stringify({
-      model: 'gpt-4o',
+      model: process.env.OPENAI_MODEL || 'gpt-4o-mini',
       response_format: { type: 'json_object' },
       messages: [
         { role: 'system', content: SYSTEM_PROMPT },

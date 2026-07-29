@@ -62,7 +62,7 @@ export async function tutorWithOpenAI({ messages }, apiKey) {
       'Content-Type': 'application/json',
     },
     body: JSON.stringify({
-      model: 'gpt-4o',
+      model: process.env.OPENAI_MODEL || 'gpt-4o-mini',
       messages: apiMessages,
       temperature: 0.4,
       max_tokens: 600,
