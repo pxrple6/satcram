@@ -1,4 +1,6 @@
 import express from 'express'
+import helmet from 'helmet'
+import rateLimit from 'express-rate-limit'
 import { fileURLToPath } from 'url'
 import { dirname, join } from 'path'
 import { loadEnv } from './loadEnv.js'
@@ -8,35 +10,100 @@ loadEnv()
 const __dirname = dirname(fileURLToPath(import.meta.url))
 const PORT = process.env.PORT || 3000
 const apiKey = process.env.OPENAI_API_KEY
+const clerkSecretKey = process.env.CLERK_SECRET_KEY
 
 const app = express()
-app.use(express.json({ limit: '32mb' }))
 
-app.post('/api/analyze', async (req, res) => {
+// Security headers with Helmet
+app.use(
+  helmet({
+    contentSecurityPolicy: false, // Disabled by default for SPA flex with KaTeX & Clerk fonts/CDN scripts
+    crossOriginEmbedderPolicy: false,
+  })
+)
+
+// Rate limiting for API endpoints (protects OpenAI API budget against spam/DDoS)
+const apiLimiter = rateLimit({
+  windowMs: 15 * 60 * 1000, // 15 minutes window
+  max: 40, // Max 40 requests per IP per 15 mins
+  standardHeaders: true,
+  legacyHeaders: false,
+  message: { error: 'Too many AI requests. Please wait a few minutes before trying again.' },
+})
+
+app.use('/api/', apiLimiter)
+app.use(express.json({ limit: '15mb' })) // Restrict JSON payload size to 15MB
+
+// Optional Clerk auth check middleware
+let clerkAuthMiddleware = (_req, _res, next) => next()
+
+if (clerkSecretKey) {
+  try {
+    const { clerkMiddleware, requireAuth } = await import('@clerk/express')
+    app.use(clerkMiddleware())
+    clerkAuthMiddleware = requireAuth()
+  } catch (err) {
+    console.warn('[Clerk] Could not load @clerk/express middleware:', err.message)
+  }
+}
+
+// Input validation helpers
+function validateAnalyzeInput(body) {
+  if (!body || typeof body !== 'object') throw new Error('Invalid payload')
+  if (body.images && (!Array.isArray(body.images) || body.images.length > 4)) {
+    throw new Error('Maximum of 4 images allowed per request.')
+  }
+  if (body.questionText && typeof body.questionText === 'string' && body.questionText.length > 10000) {
+    throw new Error('Question text exceeds maximum allowed length.')
+  }
+}
+
+function validateTutorInput(body) {
+  if (!body || !Array.isArray(body.messages) || body.messages.length === 0) {
+    throw new Error('Invalid conversation payload.')
+  }
+  if (body.messages.length > 50) {
+    throw new Error('Conversation history exceeds limit (50 messages).')
+  }
+}
+
+app.post('/api/analyze', clerkAuthMiddleware, async (req, res) => {
   if (!apiKey) {
-    return res.status(503).json({ error: 'OPENAI_API_KEY is not configured' })
+    return res.status(503).json({ error: 'OPENAI_API_KEY is not configured on the server' })
   }
   try {
+    validateAnalyzeInput(req.body)
     const { analyzeWithOpenAI } = await import('./analyze.js')
     const result = await analyzeWithOpenAI(req.body, apiKey)
     res.json(result)
   } catch (err) {
-    console.error('[analyze]', err)
-    res.status(500).json({ error: err.message || 'Analysis failed' })
+    console.error('[analyze error]', err.message)
+    const isClientErr = err.message.includes('Maximum') || err.message.includes('Invalid')
+    res.status(isClientErr ? 400 : 500).json({
+      error: process.env.NODE_ENV === 'production' && !isClientErr
+        ? 'AI analysis service encountered an error. Please try again later.'
+        : err.message || 'Analysis failed',
+    })
   }
 })
 
-app.post('/api/tutor', async (req, res) => {
+app.post('/api/tutor', clerkAuthMiddleware, async (req, res) => {
   if (!apiKey) {
-    return res.status(503).json({ error: 'OPENAI_API_KEY is not configured' })
+    return res.status(503).json({ error: 'OPENAI_API_KEY is not configured on the server' })
   }
   try {
+    validateTutorInput(req.body)
     const { tutorWithOpenAI } = await import('./tutor.js')
     const result = await tutorWithOpenAI(req.body, apiKey)
     res.json(result)
   } catch (err) {
-    console.error('[tutor]', err)
-    res.status(500).json({ error: err.message || 'Tutor request failed' })
+    console.error('[tutor error]', err.message)
+    const isClientErr = err.message.includes('Invalid') || err.message.includes('exceeds')
+    res.status(isClientErr ? 400 : 500).json({
+      error: process.env.NODE_ENV === 'production' && !isClientErr
+        ? 'AI tutor service encountered an error. Please try again later.'
+        : err.message || 'Tutor request failed',
+    })
   }
 })
 
@@ -47,6 +114,7 @@ app.get('*', (_req, res) => {
 })
 
 app.listen(PORT, () => {
-  console.log(`SATcram running at http://localhost:${PORT}`)
-  if (!apiKey) console.warn('Warning: OPENAI_API_KEY not set — analysis will fail until you add it to .env')
+  console.log(`SATcram running on port ${PORT} [NODE_ENV=${process.env.NODE_ENV || 'development'}]`)
+  if (!apiKey) console.warn('Warning: OPENAI_API_KEY not set in environment')
 })
+
