@@ -43,9 +43,18 @@ let clerkAuthMiddleware = (_req, _res, next) => next()
 
 if (clerkSecretKey) {
   try {
-    const { clerkMiddleware, requireAuth } = await import('@clerk/express')
+    const { clerkMiddleware, getAuth } = await import('@clerk/express')
     app.use('/api', clerkMiddleware())
-    clerkAuthMiddleware = requireAuth()
+    clerkAuthMiddleware = (req, res, next) => {
+      // Enforce auth if REQUIRE_AUTH=true, otherwise allow guests (protected by rate limits)
+      if (process.env.REQUIRE_AUTH === 'true') {
+        const auth = getAuth(req)
+        if (!auth || !auth.userId) {
+          return res.status(401).json({ error: 'Authentication required. Please log in to continue.' })
+        }
+      }
+      next()
+    }
   } catch (err) {
     console.warn('[Clerk] Could not load @clerk/express middleware:', err.message)
   }

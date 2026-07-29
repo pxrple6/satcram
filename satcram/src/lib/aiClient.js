@@ -3,14 +3,28 @@
 
 import { analyzeMistake as mockAnalyze } from './mockAnalysis.js'
 
+async function getAuthHeaders() {
+  const headers = { 'Content-Type': 'application/json' }
+  try {
+    if (typeof window !== 'undefined' && window.Clerk?.session) {
+      const token = await window.Clerk.session.getToken()
+      if (token) headers['Authorization'] = `Bearer ${token}`
+    }
+  } catch {
+    // ignore token fetch error
+  }
+  return headers
+}
+
 /**
  * @param {{ subject?: string, topic?: string, questionText?: string, studentAnswer: string, correctAnswer: string, images?: string[] }} input
  */
 export async function analyzeMistake(input) {
   try {
+    const headers = await getAuthHeaders()
     const res = await fetch('/api/analyze', {
       method: 'POST',
-      headers: { 'Content-Type': 'application/json' },
+      headers,
       body: JSON.stringify({
         subject: input.subject,
         topic: input.topic,

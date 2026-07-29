@@ -1,13 +1,25 @@
-import { mockTutorReply } from './mockTutor.js'
+async function getAuthHeaders() {
+  const headers = { 'Content-Type': 'application/json' }
+  try {
+    if (typeof window !== 'undefined' && window.Clerk?.session) {
+      const token = await window.Clerk.session.getToken()
+      if (token) headers['Authorization'] = `Bearer ${token}`
+    }
+  } catch {
+    // ignore token fetch error
+  }
+  return headers
+}
 
 /**
  * @param {{ messages: Array<{ role: string, content: string, images?: string[] }> }} input
  */
 export async function sendTutorMessage(input) {
   try {
+    const headers = await getAuthHeaders()
     const res = await fetch('/api/tutor', {
       method: 'POST',
-      headers: { 'Content-Type': 'application/json' },
+      headers,
       body: JSON.stringify(input),
     })
 
