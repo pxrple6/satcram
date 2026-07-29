@@ -22,16 +22,20 @@ app.use(
   })
 )
 
-// Rate limiting for API endpoints (protects OpenAI API budget against spam/DDoS)
-const apiLimiter = rateLimit({
+// Per-user rate limiting (tracks Clerk User ID if logged in, otherwise client IP)
+const userApiLimiter = rateLimit({
   windowMs: 15 * 60 * 1000, // 15 minutes window
-  max: 40, // Max 40 requests per IP per 15 mins
+  max: 20, // Max 20 requests per 15 mins per user account (or per IP for guests)
   standardHeaders: true,
   legacyHeaders: false,
-  message: { error: 'Too many AI requests. Please wait a few minutes before trying again.' },
+  keyGenerator: (req) => {
+    // Key by Clerk User ID when logged in, or client IP when unauthenticated
+    return req.auth?.userId || req.ip
+  },
+  message: { error: 'You have reached your limit of AI requests. Please wait 15 minutes before making more requests.' },
 })
 
-app.use('/api/', apiLimiter)
+app.use('/api/', userApiLimiter)
 app.use(express.json({ limit: '15mb' })) // Restrict JSON payload size to 15MB
 
 // Optional Clerk auth check middleware
