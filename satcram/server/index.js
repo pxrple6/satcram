@@ -38,13 +38,13 @@ const userApiLimiter = rateLimit({
 app.use('/api/', userApiLimiter)
 app.use(express.json({ limit: '15mb' })) // Restrict JSON payload size to 15MB
 
-// Optional Clerk auth check middleware
+// Optional Clerk auth check middleware scoped exclusively to /api routes
 let clerkAuthMiddleware = (_req, _res, next) => next()
 
 if (clerkSecretKey) {
   try {
     const { clerkMiddleware, requireAuth } = await import('@clerk/express')
-    app.use(clerkMiddleware())
+    app.use('/api', clerkMiddleware())
     clerkAuthMiddleware = requireAuth()
   } catch (err) {
     console.warn('[Clerk] Could not load @clerk/express middleware:', err.message)
@@ -114,7 +114,22 @@ app.post('/api/tutor', clerkAuthMiddleware, async (req, res) => {
 const dist = join(__dirname, '..', 'dist')
 app.use(express.static(dist))
 app.get('*', (_req, res) => {
-  res.sendFile(join(dist, 'index.html'))
+  res.sendFile(join(dist, 'index.html'), (err) => {
+    if (err) {
+      console.error('[sendFile error]', err.message)
+      if (!res.headersSent) {
+        res.status(500).send('Front end build files not found. Ensure npm run build completed.')
+      }
+    }
+  })
+})
+
+// Global error handler middleware
+app.use((err, _req, res, _next) => {
+  console.error('[Unhandled Express Error]', err)
+  if (!res.headersSent) {
+    res.status(500).json({ error: 'Internal Server Error' })
+  }
 })
 
 app.listen(PORT, () => {
