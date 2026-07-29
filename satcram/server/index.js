@@ -13,13 +13,34 @@ const PORT = process.env.PORT || 3000
 const apiKey = process.env.OPENAI_API_KEY
 const clerkSecretKey = process.env.CLERK_SECRET_KEY
 const clerkPublishableKey = process.env.CLERK_PUBLISHABLE_KEY || process.env.VITE_CLERK_PUBLISHABLE_KEY
+const requireAuth = process.env.REQUIRE_AUTH !== 'false'
 
 const app = express()
+
+// Render sits behind a reverse proxy. Trust exactly one proxy hop so guest IP limits are accurate.
+if (process.env.NODE_ENV === 'production') app.set('trust proxy', 1)
 
 // Security headers with Helmet
 app.use(
   helmet({
-    contentSecurityPolicy: false, // Disabled by default for SPA flex with KaTeX & Clerk fonts/CDN scripts
+    contentSecurityPolicy:
+      process.env.NODE_ENV === 'production'
+        ? {
+            directives: {
+              defaultSrc: ["'self'"],
+              baseUri: ["'self'"],
+              objectSrc: ["'none'"],
+              frameAncestors: ["'self'"],
+              scriptSrc: ["'self'", "'unsafe-inline'", 'https://*.clerk.accounts.dev'],
+              scriptSrcAttr: ["'none'"],
+              styleSrc: ["'self'", "'unsafe-inline'", 'https://*.clerk.accounts.dev'],
+              imgSrc: ["'self'", 'data:', 'blob:', 'https:'],
+              fontSrc: ["'self'", 'data:', 'https://*.clerk.accounts.dev'],
+              connectSrc: ["'self'", 'https://*.clerk.accounts.dev', 'https://api.clerk.com'],
+              frameSrc: ['https://*.clerk.accounts.dev'],
+            },
+          }
+        : false,
     crossOriginEmbedderPolicy: false,
   })
 )
@@ -40,15 +61,19 @@ const userApiLimiter = rateLimit({
 app.use(express.json({ limit: '15mb' })) // Restrict JSON payload size to 15MB
 
 // Optional Clerk auth check middleware scoped exclusively to /api routes
-let clerkAuthMiddleware = (_req, _res, next) => next()
+let clerkAuthMiddleware = (_req, res, next) => {
+  if (requireAuth) {
+    return res.status(503).json({ error: 'Server authentication is not configured. Set CLERK_SECRET_KEY and CLERK_PUBLISHABLE_KEY.' })
+  }
+  next()
+}
 
 if (clerkSecretKey && clerkPublishableKey) {
   try {
     const { clerkMiddleware, getAuth } = await import('@clerk/express')
     app.use('/api', clerkMiddleware({ secretKey: clerkSecretKey, publishableKey: clerkPublishableKey }))
     clerkAuthMiddleware = (req, res, next) => {
-      // Enforce auth if REQUIRE_AUTH=true, otherwise allow guests (protected by rate limits)
-      if (process.env.REQUIRE_AUTH === 'true') {
+      if (requireAuth) {
         const auth = getAuth(req)
         if (!auth || !auth.userId) {
           return res.status(401).json({ error: 'Authentication required. Please log in to continue.' })
@@ -60,7 +85,7 @@ if (clerkSecretKey && clerkPublishableKey) {
     console.warn('[Clerk] Could not load @clerk/express middleware:', err.message)
   }
 } else if (clerkSecretKey) {
-  console.warn('[Clerk] Server authentication is disabled because CLERK_PUBLISHABLE_KEY is not configured. API requests will use guest/IP limits.')
+  console.warn('[Clerk] CLERK_PUBLISHABLE_KEY is missing. AI API access is disabled until Clerk is fully configured.')
 }
 
 // Run after optional Clerk middleware so signed-in users receive an account-based limit.
