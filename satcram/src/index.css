@@ -301,6 +301,10 @@ button {
 
 .lesson-layout { display: grid; gap: 20px; grid-template-columns: minmax(0, 1.3fr) minmax(300px, 0.7fr); margin-top: 28px; }
 .lesson-stage { align-items: center; display: flex; justify-content: center; min-height: 380px; overflow: hidden; padding: 24px; }
+.linear-lab { align-items: center; display: flex; flex-direction: column; max-width: 500px; width: 100%; }
+.lab-equation { background: var(--brand-soft); border-radius: 999px; color: var(--brand-dark); font-size: 20px; margin-bottom: 8px; padding: 5px 18px; }.lab-equation .rich-text > p { margin: 0; }
+.lab-graph { max-height: 250px; max-width: 440px; width: 100%; }.graph-grid { stroke: #e8eaf2; stroke-width: 1; }.graph-axis { stroke: #8990a2; stroke-width: 1.4; }.graph-slope-line { stroke: var(--brand); stroke-linecap: round; stroke-width: 4; transition: all .25s ease; }.graph-dot { fill: var(--paper); stroke: var(--brand); stroke-width: 3; transition: all .25s ease; }.graph-label { fill: var(--muted); font: 14px var(--font-mono); }
+.lab-controls { display: grid; gap: 10px; grid-template-columns: 1fr 1fr; margin-top: 4px; max-width: 440px; width: 100%; }.lab-controls label { color: var(--ink-soft); display: grid; font-size: 12px; gap: 4px; grid-template-columns: auto 1fr auto; align-items: center; }.lab-controls input { accent-color: var(--brand); min-width: 0; }.lab-controls b { color: var(--brand-dark); font-family: var(--font-mono); width: 12px; }.lab-caption { color: var(--muted); font-size: 13px; margin: 15px 0 0; text-align: center; }
 .lesson-diagram { align-items: center; display: flex; height: 300px; justify-content: center; max-width: 560px; position: relative; width: 100%; }
 .math-diagram { background: radial-gradient(circle at 50% 50%, #f0f2ff, transparent 68%); }
 .diagram-x, .diagram-y { background: var(--ink); opacity: .45; position: absolute; }

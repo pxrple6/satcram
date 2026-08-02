@@ -39,15 +39,15 @@ export default function Home() {
             <p className="hero-label">SAT prep that adapts to you</p>
             <h1>Practice, find your patterns, and know what to study next.</h1>
             <p className="hero-lede">
-              Set your test date, start practising, and log any missed question with a screenshot or paste.
-              SATcram turns your results into targeted practice, visual study guides, and a daily plan.
+              Start with a short SAT diagnostic. Your answers create a plan, target your weak skills,
+              and unlock lessons that explain exactly what to fix. Adding an outside question is optional.
             </p>
             <div className="hero-actions">
               <Link to="/signup" className="btn">
-                Build my SAT plan
+                Start my diagnostic
               </Link>
-              <Link to="/app/upload" className="btn btn-ghost">
-                Try a practice set
+              <Link to="/app/practice" className="btn btn-ghost">
+                See practice first
               </Link>
             </div>
           </div>
@@ -111,7 +111,7 @@ export default function Home() {
 
       <section className="home-section home-section-alt" id="features">
         <div className="section-inner">
-          <h2>Built around your mistakes</h2>
+            <h2>Built for real SAT prep</h2>
           <div className="features-grid">
             {FEATURES.map((f) => (
               <div key={f.title} className="feature-item panel panel-pad">
@@ -127,10 +127,10 @@ export default function Home() {
         <div className="section-inner cta-inner">
           <div>
             <h2>Ready to start?</h2>
-            <p>Upload your first mistake — free, no credit card required.</p>
+            <p>Take a short diagnostic and get your first targeted set.</p>
           </div>
-          <Link to="/app/upload" className="btn">
-            Upload a mistake
+          <Link to="/app/practice" className="btn">
+            Start practising
           </Link>
         </div>
       </section>

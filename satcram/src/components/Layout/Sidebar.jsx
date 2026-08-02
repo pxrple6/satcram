@@ -3,11 +3,11 @@ import { Link, NavLink } from '../../lib/router.jsx'
 
 const NAV = [
   { to: '/app', label: 'Dashboard', end: true },
-  { to: '/app/upload', label: 'Upload' },
+  { to: '/app/upload', label: 'Add a question' },
   { to: '/app/practice', label: 'Practice' },
   { to: '/app/dna', label: 'Mistake DNA' },
   { to: '/app/plan', label: 'Study plan' },
-  { to: '/app/lessons', label: 'Visual lessons' },
+  { to: '/app/lessons', label: 'Lessons' },
   { to: '/app/tutor', label: 'Tutor' },
   { to: '/app/journal', label: 'Journal' },
 ]
