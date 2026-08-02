@@ -1514,7 +1514,7 @@ select:focus {
 .annotation-legend span { border-radius: 99px; font-size: 12px; font-weight: 700; padding: 5px 9px; }
 .mark-green { background: #e6f7ed; color: #157348; }.mark-amber { background: #fff4db; color: #95610c; }.mark-red { background: #ffeaec; color: #ba2630; }.mark-blue { background: #e8edff; color: #2943bd; }
 .tutor-concept { background: linear-gradient(135deg, #f6f7ff, #fff); border: 1px solid #d8defa; border-radius: 16px; margin: 16px 0; max-width: 900px; padding: 20px; }
-.tutor-concept h3 { margin: 4px 0 12px; }.tutor-concept > p { color: var(--muted); margin: 12px 0 0; }
+.tutor-concept h3 { margin: 4px 0 12px; }.tutor-concept > p, .tutor-concept > .rich-text { color: var(--muted); margin: 12px 0 0; }
 .concept-canvas { align-items: center; background: #fff; border: 1px solid #e2e6f6; border-radius: 12px; display: flex; gap: 12px; justify-content: center; min-height: 160px; overflow: hidden; padding: 22px; position: relative; }
 .concept-box, .concept-rule { border-radius: 10px; font-size: 14px; font-weight: 700; padding: 13px 18px; }.concept-box { background: #eff2ff; border: 1px solid #bfcaff; }.concept-rule { background: #3654f0; color: #fff; }.concept-arrow { color: #3654f0; font-size: 27px; font-weight: 700; }
 .concept-rung { background: #f5f6fa; border: 1px solid var(--line); border-radius: 9px; display: block; font-size: 14px; font-weight: 650; padding: 10px 14px; position: relative; text-align: center; width: min(300px, 82%); }.concept-rung:nth-child(2) { transform: translateY(-2px); }.concept-rung.active { background: #e8edff; border-color: #aebdff; color: #2943bd; }.tutor-concept-evidence-ladder .concept-canvas, .tutor-concept-sentence-map .concept-canvas { flex-direction: column; gap: 7px; }

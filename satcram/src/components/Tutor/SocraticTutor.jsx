@@ -13,7 +13,7 @@ function ChatBubble({ role, text }) {
   return (
     <div className={`chat-bubble ${isTutor ? 'chat-tutor' : 'chat-student'}`}>
       <div className="chat-role">{isTutor ? 'Tutor' : 'You'}</div>
-      {isTutor ? <RichText text={text} /> : <p>{text}</p>}
+      <RichText text={text} />
     </div>
   )
 }
@@ -29,9 +29,9 @@ function TutorConceptVisual({ concept, retryPrompt, steps = [] }) {
       {visual === 'evidence-ladder' && <><span className="concept-rung">exact words</span><span className="concept-rung">reasonable inference</span><span className="concept-rung active">answer choice</span></>}
       {visual === 'sentence-map' && <><span className="concept-rung">first clause</span><span className="concept-rung">relationship</span><span className="concept-rung active">punctuation / transition</span></>}
     </div>
-    <p>{concept.takeaway}</p>
-    {steps.length > 0 && <div className="tutor-step-map">{steps.slice(0, 4).map((step, index) => <div className={`tutor-step-card mark-${step.color || 'blue'}`} key={`${step.label}-${index}`}><span>{step.label}</span><p>{step.detail}</p></div>)}</div>}
-    {retryPrompt && <div className="concept-retry"><strong>Quick retry</strong><p>{retryPrompt}</p></div>}
+    <RichText text={concept.takeaway} />
+    {steps.length > 0 && <div className="tutor-step-map">{steps.slice(0, 4).map((step, index) => <div className={`tutor-step-card mark-${step.color || 'blue'}`} key={`${step.label}-${index}`}><span>{step.label}</span><RichText text={step.detail} /></div>)}</div>}
+    {retryPrompt && <div className="concept-retry"><strong>Quick retry</strong><RichText text={retryPrompt} /></div>}
   </section>
 }
 
@@ -242,7 +242,7 @@ export default function SocraticTutor() {
       {questionText.trim() && (
         <div className="panel panel-pad tutor-question-text">
           <div className="eyebrow">question</div>
-          <p>{questionText}</p>
+          <RichText text={questionText} />
         </div>
       )}
 
