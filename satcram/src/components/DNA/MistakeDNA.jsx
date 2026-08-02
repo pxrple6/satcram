@@ -1,4 +1,4 @@
-import React from 'react'
+import React, { useMemo, useState } from 'react'
 import { useStore } from '../../App.jsx'
 import { TAXONOMY, SUBJECTS } from '../../data/topics.js'
 
@@ -10,7 +10,9 @@ function markFor(masteryScore) {
 }
 
 export default function MistakeDNA() {
-  const { mastery } = useStore()
+  const { mastery, mistakes } = useStore()
+  const [expandedTopic, setExpandedTopic] = useState(null)
+  const missedByTopic = useMemo(() => mistakes.filter((mistake) => mistake.correctness === 'Incorrect').reduce((groups, mistake) => ({ ...groups, [mistake.topic]: [...(groups[mistake.topic] || []), mistake] }), {}), [mistakes])
 
   return (
     <div>
@@ -30,8 +32,11 @@ export default function MistakeDNA() {
                 const score = mastery[topic]
                 const mark = markFor(score)
                 return (
-                  <div
-                    key={topic}
+                  <React.Fragment key={topic}>
+                  <button
+                    type="button"
+                    onClick={() => setExpandedTopic(expandedTopic === topic ? null : topic)}
+                    className="dna-topic-row"
                     style={{
                       display: 'grid',
                       gridTemplateColumns: '24px 1fr 44px',
@@ -57,7 +62,14 @@ export default function MistakeDNA() {
                     <span className="stat" style={{ fontSize: 12, color: 'var(--muted)', textAlign: 'right' }}>
                       {score !== undefined ? `${score}%` : '\u2014'}
                     </span>
-                  </div>
+                  </button>
+                  {expandedTopic === topic && missedByTopic[topic]?.length > 0 && (
+                    <div className="dna-question-history">
+                      <div className="eyebrow">past missed questions</div>
+                      {missedByTopic[topic].slice(0, 4).map((mistake) => <div key={mistake.id} className="dna-question"><span>{mistake.questionText || mistake.questionType || 'Question screenshot'}</span><small>Your answer: {mistake.studentAnswer} · Correct: {mistake.correctAnswer}</small></div>)}
+                    </div>
+                  )}
+                  </React.Fragment>
                 )
               })}
             </div>

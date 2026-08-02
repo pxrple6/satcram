@@ -5,6 +5,7 @@ import { sendTutorMessage } from '../../lib/tutorClient.js'
 import { useSearchParams } from '../../lib/router.jsx'
 import { PRACTICE_BANK } from '../../data/practiceBank.js'
 import WorkPad from './WorkPad.jsx'
+import AnnotatedWork from './AnnotatedWork.jsx'
 
 function ChatBubble({ role, text }) {
   const isTutor = role === 'assistant'
@@ -27,6 +28,7 @@ export default function SocraticTutor() {
   const [started, setStarted] = useState(false)
   const [busy, setBusy] = useState(false)
   const [error, setError] = useState('')
+  const [annotation, setAnnotation] = useState(null)
   const chatEndRef = useRef(null)
   const inputRef = useRef(null)
   const startedPracticeRef = useRef(false)
@@ -46,12 +48,13 @@ export default function SocraticTutor() {
     if (awaitingAnswer) inputRef.current?.focus()
   }, [awaitingAnswer])
 
-  async function callTutor(nextMessages) {
+  async function callTutor(nextMessages, options = {}) {
     setBusy(true)
     setError('')
     try {
-      const { message } = await sendTutorMessage({ messages: nextMessages })
+      const { message, annotation: nextAnnotation } = await sendTutorMessage({ messages: nextMessages, workReview: options.workReview })
       setMessages([...nextMessages, { role: 'assistant', content: message }])
+      if (nextAnnotation) setAnnotation(nextAnnotation)
     } catch (err) {
       setError(err.message || 'Something went wrong.')
     } finally {
@@ -82,7 +85,7 @@ export default function SocraticTutor() {
     }
     setStarted(true)
     setMessages([first])
-    await callTutor([first])
+    await callTutor([first], { workReview: reviewMode !== 'question' })
   }
 
   async function handleSend(text) {
@@ -109,6 +112,7 @@ export default function SocraticTutor() {
     setReviewMode('question')
     setInput('')
     setError('')
+    setAnnotation(null)
   }
 
   if (!started) {
@@ -191,9 +195,7 @@ export default function SocraticTutor() {
 
       {activeImages.length > 0 && (
         <div className="tutor-question-images">
-          {activeImages.map((img) => (
-            <img key={img.id} src={img.dataUrl} alt="Question screenshot" />
-          ))}
+          {reviewMode === 'question' ? activeImages.map((img) => <img key={img.id} src={img.dataUrl} alt="Question screenshot" />) : <AnnotatedWork image={activeImages[0]?.dataUrl} annotation={annotation} />}
         </div>
       )}
 

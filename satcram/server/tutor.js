@@ -38,8 +38,9 @@ import { recordOpenAIUsage } from './usageBudget.js'
  * @param {{ messages: Array<{ role: string, content: string, images?: string[] }> }} input
  * @param {string} apiKey
  */
-export async function tutorWithOpenAI({ messages }, apiKey) {
-  const apiMessages = [{ role: 'system', content: TUTOR_SYSTEM }]
+export async function tutorWithOpenAI({ messages, workReview = false }, apiKey) {
+  const reviewInstruction = `\nWORK REVIEW OUTPUT: Return only JSON with {"feedback":string,"highlight":{"x":number,"y":number,"width":number,"height":number,"label":string}|null}. Coordinates are approximate on a 0–1000 image scale. Mark only the first incorrect step. feedback must start with **First step to revisit**.`
+  const apiMessages = [{ role: 'system', content: `${TUTOR_SYSTEM}${workReview ? reviewInstruction : ''}` }]
 
   for (let i = 0; i < messages.length; i++) {
     const m = messages[i]
@@ -70,6 +71,7 @@ export async function tutorWithOpenAI({ messages }, apiKey) {
       messages: apiMessages,
       reasoning_effort: 'none',
       max_completion_tokens: 600,
+      ...(workReview ? { response_format: { type: 'json_object' } } : {}),
     }),
   })
 
@@ -79,6 +81,10 @@ export async function tutorWithOpenAI({ messages }, apiKey) {
   }
 
   const data = await response.json()
+  if (workReview) {
+    const review = JSON.parse(data.choices[0].message.content)
+    return { message: review.feedback?.trim() || 'I could not identify a clear first step to revisit. Please retake the photo closer.', annotation: review.highlight || null, usage: data.usage }
+  }
   return { message: data.choices[0].message.content.trim(), usage: data.usage }
 }
 

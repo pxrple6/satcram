@@ -14,7 +14,7 @@ async function getAuthHeaders() {
 }
 
 /**
- * @param {{ messages: Array<{ role: string, content: string, images?: string[] }> }} input
+ * @param {{ messages: Array<{ role: string, content: string, images?: string[] }>, workReview?: boolean }} input
  */
 export async function sendTutorMessage(input) {
   try {
