@@ -2,6 +2,7 @@ import { defineConfig, loadEnv } from 'vite'
 import react from '@vitejs/plugin-react'
 import { handleAnalyzeRequest } from './server/analyze.js'
 import { handleTutorRequest } from './server/tutor.js'
+import { handlePracticeRequest } from './server/practice.js'
 import { usageLimitFor } from './server/usageBudget.js'
 
 function apiPlugin(env) {
@@ -28,6 +29,11 @@ function apiPlugin(env) {
       if (req.method !== 'POST') return next()
       const key = allowRequest(req, res)
       if (key) await handleTutorRequest(req, res, apiKey, key)
+    })
+    server.middlewares.use('/api/practice', async (req, res, next) => {
+      if (req.method !== 'POST') return next()
+      const key = allowRequest(req, res)
+      if (key) await handlePracticeRequest(req, res, apiKey, key)
     })
   }
 

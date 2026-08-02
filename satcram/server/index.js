@@ -179,6 +179,12 @@ app.post('/api/tutor', clerkAuthMiddleware, enforceUsageBudget, async (req, res)
   }
 })
 
+app.post('/api/practice', clerkAuthMiddleware, enforceUsageBudget, async (req, res) => {
+  if (!apiKey) return res.status(503).json({ error: 'OPENAI_API_KEY is not configured on the server' })
+  const { handlePracticeRequest } = await import('./practice.js')
+  await handlePracticeRequest(req, res, apiKey, usageKey(req))
+})
+
 const dist = join(__dirname, '..', 'dist')
 app.use(express.static(dist))
 app.get('*', (_req, res) => {

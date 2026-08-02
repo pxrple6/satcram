@@ -297,6 +297,8 @@ button {
 .answer-choice .rich-text > p { margin: 0; }
 .answer-choice .katex { font-size: 1.08em; }
 .practice-feedback .rich-text > p { margin: 7px 0 0; }
+.correct-answer { align-items: center; display: flex; flex-wrap: wrap; gap: 6px; }.correct-answer .rich-text > p { margin: 0; }.correct-answer .rich-text { font-weight: 700; }
+.practice-done { align-items: center; display: flex; gap: 20px; justify-content: space-between; margin-top: 18px; }.practice-done h3 { margin: 6px 0; }.practice-done p { color: var(--muted); margin: 0; }.practice-done-actions { display: flex; flex-wrap: wrap; gap: 8px; }
 @media (max-width: 640px) { .practice-card { padding: 18px; } .practice-card-head { align-items: flex-start; gap: 12px; } }
 
 .lesson-layout { display: grid; gap: 20px; grid-template-columns: minmax(0, 1.3fr) minmax(300px, 0.7fr); margin-top: 28px; }
@@ -325,6 +327,8 @@ button {
 @keyframes draw-line { from { transform: rotate(-28deg) scaleX(0); } to { transform: rotate(-28deg) scaleX(1); } }
 @keyframes card-arrive { from { opacity: 0; transform: translateY(16px); } to { opacity: 1; transform: translateY(0); } }
 @media (max-width: 760px) { .lesson-layout { grid-template-columns: 1fr; }.lesson-stage { min-height: 300px; }.reading-diagram { padding: 0 16px; } }
+.lesson-check { margin-top: 20px; max-width: 760px; }.lesson-check > .rich-text > p { font-size: 16px; margin: 8px 0 16px; }.lesson-choice-list { display: grid; gap: 8px; margin: 14px 0; }.lesson-choice { background: var(--paper); border: 1px solid var(--line); border-radius: 9px; color: var(--ink); cursor: pointer; font: inherit; padding: 10px 12px; text-align: left; }.lesson-choice .rich-text > p { margin: 0; }.lesson-choice.selected { background: var(--brand-soft); border-color: var(--brand); }.lesson-choice.correct-choice { background: #e9f8ef; border-color: var(--correct); }.lesson-check-result { background: var(--paper-dim); border-radius: 8px; margin-top: 14px; padding: 12px; }.lesson-check-result .rich-text > p { margin: 5px 0 0; }
+@media (max-width: 640px) { .practice-done { align-items: flex-start; flex-direction: column; } }
 
 /* ---------- reusable "paper" panel ---------- */
 
