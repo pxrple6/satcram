@@ -4,6 +4,9 @@ import { useStore, useProfile } from '../../App.jsx'
 import { buildStudyPlan } from '../../lib/studyPlan.js'
 import { SAT_DATES, daysUntil, formatCountdown } from '../../data/satDates.js'
 
+const WEEK_DAYS = ['Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat', 'Sun']
+const SUBJECT_SCHEDULE_COLORS = { Math: 'schedule-math', Reading: 'schedule-reading', Writing: 'schedule-writing' }
+
 export default function StudyPlan() {
   const { mastery, mistakes } = useStore()
   const { profile, setSatTestDate } = useProfile()
@@ -18,6 +21,10 @@ export default function StudyPlan() {
   })
 
   const upcoming = SAT_DATES.filter((d) => d.date >= new Date().toISOString().slice(0, 10))
+  const weeklySchedule = plan.weakestTopics.slice(0, 4).flatMap((topic, index) => [
+    { ...topic, day: WEEK_DAYS[index], time: index % 2 ? '5:00 PM' : '4:00 PM', label: 'Learn + guided check' },
+    { ...topic, day: WEEK_DAYS[Math.min(6, index + 2)], time: '6:00 PM', label: 'Timed practice' },
+  ])
 
   return (
     <div className="plan-page">
@@ -113,6 +120,16 @@ export default function StudyPlan() {
           </>
         )}
       </div>
+
+      {weeklySchedule.length > 0 && (
+        <section className="panel panel-pad weekly-schedule">
+          <div className="eyebrow">this week · weak-topic schedule</div>
+          <h3>Study the exact skills costing you points.</h3>
+          <div className="weekly-grid">
+            {WEEK_DAYS.map((day) => <div key={day} className="schedule-day"><span className="schedule-day-label">{day}</span>{weeklySchedule.filter((block) => block.day === day).map((block, index) => <Link key={`${block.topic}-${index}`} to={`/app/lessons?topic=${encodeURIComponent(block.topic)}`} className={`schedule-block ${SUBJECT_SCHEDULE_COLORS[block.subject] || ''}`}><small>{block.time}</small><strong>{block.topic}</strong><span>{block.label}</span></Link>)}</div>)}
+          </div>
+        </section>
+      )}
 
       {plan.weakestTopics.length > 0 && profile.satTestDate && (
         <div className="panel panel-pad plan-breakdown">

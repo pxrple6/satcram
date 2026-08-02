@@ -82,10 +82,12 @@ export default function VisualLessons() {
 
   const lesson = visualFor(selected.subject, selected.topic)
   const lessonQuestion = PRACTICE_BANK.find((question) => question.topic === selected.topic)
+  const mainIssue = mistakes.find((mistake) => mistake.topic === selected.topic && mistake.correctness === 'Incorrect')
   return <div className="lessons-page">
     <div className="eyebrow">visual lesson · built from your weak spot</div>
     <h2 className="page-title">{selected.topic}: learn the idea, then practise it.</h2>
     <p className="page-lede">{lesson.idea}</p>
+    {mainIssue && <div className="lesson-main-issue"><span className="eyebrow">your main issue</span><strong>{mainIssue.pattern || mainIssue.reason}</strong><span>This lesson and its check focus only on fixing that move.</span></div>}
     <div className="lesson-layout">
       <section className="panel lesson-stage"><AnimatedDiagram subject={selected.subject} topic={selected.topic} /></section>
       <section className="panel panel-pad lesson-steps"><div className="eyebrow">{lesson.kicker}</div>{lesson.steps.map((step, index) => <div className="lesson-step" key={step}><span>{index + 1}</span><p>{step}</p></div>)}<RichText text={selected.subject === 'Math' ? 'For example, watch how $y = 2x + 1$ changes when $x$ moves by one.' : 'Use this pattern on a fresh question while the idea is still visible.'} /><div className="lesson-actions"><Link to={`/app/practice?subject=${selected.subject}`} className="btn">Practice this skill</Link><Link to="/app/tutor" className="btn btn-ghost">Ask the tutor</Link></div></section>

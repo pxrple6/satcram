@@ -12,7 +12,9 @@ function priorityDeck(mistakes, subject) {
     .reduce((counts, m) => ({ ...counts, [m.topic]: (counts[m.topic] || 0) + 1 }), {})
   return PRACTICE_BANK
     .filter((q) => !subject || q.subject === subject)
-    .sort((a, b) => (weakTopics[b.topic] || 0) - (weakTopics[a.topic] || 0))
+    .map((question) => ({ question, priority: weakTopics[question.topic] || 0, tieBreaker: Math.random() }))
+    .sort((a, b) => b.priority - a.priority || a.tieBreaker - b.tieBreaker)
+    .map(({ question }) => question)
 }
 
 export default function PracticeDeck() {

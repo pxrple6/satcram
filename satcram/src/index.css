@@ -1490,3 +1490,19 @@ select:focus {
     transition: none !important;
   }
 }
+
+.lesson-main-issue { align-items: flex-start; background: var(--paper-dim); border-left: 3px solid var(--review); display: flex; flex-direction: column; gap: 4px; margin: 18px 0; max-width: 760px; padding: 12px 14px; }
+.lesson-main-issue > span:last-child { color: var(--muted); font-size: 13px; }
+.practice-status { color: var(--muted); font-size: 13px; margin: 8px 0 0; }
+.weekly-schedule { margin-top: 20px; }
+.weekly-schedule h3 { font-size: 18px; margin: 5px 0 18px; }
+.weekly-grid { display: grid; gap: 8px; grid-template-columns: repeat(7, minmax(110px, 1fr)); overflow-x: auto; padding-bottom: 5px; }
+.schedule-day { display: flex; flex-direction: column; gap: 7px; min-height: 150px; }
+.schedule-day-label { color: var(--muted); font-family: var(--font-mono); font-size: 12px; }
+.schedule-block { border-radius: 9px; display: flex; flex-direction: column; gap: 3px; min-width: 110px; padding: 10px; text-decoration: none; }
+.schedule-block small { opacity: .72; }
+.schedule-block strong { color: inherit; font-size: 13px; }
+.schedule-block span { font-size: 11px; }
+.schedule-math { background: #e9edff; color: #34479d; }
+.schedule-reading { background: #e8f6ef; color: #25734b; }
+.schedule-writing { background: #fff3df; color: #825b16; }
