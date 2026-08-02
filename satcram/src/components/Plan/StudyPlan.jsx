@@ -127,7 +127,7 @@ export default function StudyPlan() {
                   <span className="mark-review">{t.mastery}%</span>
                 </div>
                 <div className="visual-guide-steps"><span>See the pattern</span><i>→</i><span>Try one move</span><i>→</i><span>Practise it</span></div>
-                <Link to={`/app/practice?subject=${t.subject}`} className="text-action">Open targeted practice</Link>
+                <Link to={`/app/lessons?topic=${encodeURIComponent(t.topic)}`} className="text-action">Open visual lesson</Link>
               </div>
             ))}
           </div>

@@ -2,6 +2,8 @@ import React, { useEffect, useRef, useState } from 'react'
 import ImageDropzone from '../Upload/ImageDropzone.jsx'
 import RichText from '../RichText.jsx'
 import { sendTutorMessage } from '../../lib/tutorClient.js'
+import { useSearchParams } from '../../lib/router.jsx'
+import { PRACTICE_BANK } from '../../data/practiceBank.js'
 
 function ChatBubble({ role, text }) {
   const isTutor = role === 'assistant'
@@ -14,6 +16,7 @@ function ChatBubble({ role, text }) {
 }
 
 export default function SocraticTutor() {
+  const [searchParams] = useSearchParams()
   const [questionText, setQuestionText] = useState('')
   const [images, setImages] = useState([])
   const [messages, setMessages] = useState([])
@@ -23,6 +26,7 @@ export default function SocraticTutor() {
   const [error, setError] = useState('')
   const chatEndRef = useRef(null)
   const inputRef = useRef(null)
+  const startedPracticeRef = useRef(false)
 
   const hasQuestion = questionText.trim() || images.length > 0
   const hasAskedForAnswer = messages.some((m) => m.role === 'assistant')
@@ -50,6 +54,18 @@ export default function SocraticTutor() {
       setBusy(false)
     }
   }
+
+  useEffect(() => {
+    const practiceId = searchParams.get('practice')
+    const practiceQuestion = PRACTICE_BANK.find((question) => question.id === practiceId)
+    if (!practiceQuestion || startedPracticeRef.current) return
+    startedPracticeRef.current = true
+    const first = { role: 'user', content: practiceQuestion.prompt }
+    setQuestionText(practiceQuestion.prompt)
+    setStarted(true)
+    setMessages([first])
+    callTutor([first])
+  }, [searchParams])
 
   async function handleStart(e) {
     e.preventDefault()

@@ -40,7 +40,7 @@ export default function PracticeDeck() {
         <div className="practice-question"><RichText text={current.prompt} /></div>
         <div className="answer-choice-list">{current.choices.map((choice) => <button type="button" key={choice} disabled={submitted} onClick={() => setSelected(choice)} className={`answer-choice ${selected === choice ? 'selected' : ''} ${submitted && choice === current.answer ? 'correct-choice' : ''} ${submitted && selected === choice && choice !== current.answer ? 'incorrect-choice' : ''}`}><RichText text={choice} /></button>)}</div>
         {submitted && <div className="practice-feedback"><strong>{selected === current.answer ? 'Correct — nice work.' : <><span>Not quite. The correct answer is </span><RichText text={current.answer} /></>}</strong><RichText text={current.explanation} /></div>}
-        <div className="practice-nav">{submitted ? <button type="button" className="btn" onClick={next} disabled={index === deck.length - 1}>Next question</button> : <button type="button" className="btn" disabled={!selected} onClick={submit}>Check answer</button>}<Link to="/app/tutor" className="btn btn-ghost">Ask the tutor</Link></div>
+        <div className="practice-nav">{submitted ? <button type="button" className="btn" onClick={next} disabled={index === deck.length - 1}>Next question</button> : <button type="button" className="btn" disabled={!selected} onClick={submit}>Check answer</button>}<Link to={`/app/tutor?practice=${current.id}`} className="btn btn-ghost">Work through with tutor</Link></div>
       </div>}
       {submitted && index === deck.length - 1 && <div className="panel panel-pad practice-done">You’ve completed this set. Your results are now part of your study plan.</div>}
     </div>

@@ -7,6 +7,7 @@ const NAV = [
   { to: '/app/practice', label: 'Practice' },
   { to: '/app/dna', label: 'Mistake DNA' },
   { to: '/app/plan', label: 'Study plan' },
+  { to: '/app/lessons', label: 'Visual lessons' },
   { to: '/app/tutor', label: 'Tutor' },
   { to: '/app/journal', label: 'Journal' },
 ]
