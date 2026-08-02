@@ -19,3 +19,12 @@ export async function generatePracticeSet(focus) {
   window.dispatchEvent(new Event('satcram:usage-updated'))
   return result.questions
 }
+
+export function recentPracticeStyles() {
+  try {
+    const saved = JSON.parse(localStorage.getItem('satcram_generated_practice_sets') || '[]')
+    return [...new Set(saved.flatMap((set) => set.questions || []).map((question) => question.styleTag).filter(Boolean))].slice(0, 80)
+  } catch {
+    return []
+  }
+}

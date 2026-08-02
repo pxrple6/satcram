@@ -60,12 +60,27 @@ function AnimatedDiagram({ subject, topic }) {
   return <div className="lesson-diagram writing-diagram"><span className="sentence-chip">Independent clause</span><span className="diagram-arrow">→</span><span className="sentence-chip accent">relationship</span><span className="diagram-arrow">→</span><span className="sentence-chip">correct rule</span><span className="diagram-caption">Build the sentence before editing it.</span></div>
 }
 
-function LessonCheck({ question, onAnswer }) {
+function LessonCheck({ question, onAnswer, label = 'try it now' }) {
   const [choice, setChoice] = useState(null)
   const [checked, setChecked] = useState(false)
   if (!question) return null
   function check() { if (!choice) return; setChecked(true); onAnswer(question, choice) }
-  return <section className="panel panel-pad lesson-check"><div className="eyebrow">try it now</div><RichText text={question.prompt} /><div className="lesson-choice-list">{question.choices.map((item) => <button key={item} type="button" disabled={checked} onClick={() => setChoice(item)} className={`lesson-choice ${choice === item ? 'selected' : ''} ${checked && item === question.answer ? 'correct-choice' : ''}`}> <RichText text={item} /></button>)}</div>{checked ? <div className="lesson-check-result"><strong>{choice === question.answer ? 'You got it.' : 'One more look:'}</strong><RichText text={question.explanation} /></div> : <button className="btn" type="button" disabled={!choice} onClick={check}>Check my thinking</button>}</section>
+  return <section className="panel panel-pad lesson-check"><div className="eyebrow">{label}</div><RichText text={question.prompt} /><div className="lesson-choice-list">{question.choices.map((item) => <button key={item} type="button" disabled={checked} onClick={() => setChoice(item)} className={`lesson-choice ${choice === item ? 'selected' : ''} ${checked && item === question.answer ? 'correct-choice' : ''}`}> <RichText text={item} /></button>)}</div>{checked ? <div className="lesson-check-result"><strong>{choice === question.answer ? 'You got it.' : 'One more look:'}</strong><RichText text={question.explanation} /></div> : <button className="btn" type="button" disabled={!choice} onClick={check}>Check my thinking</button>}</section>
+}
+
+function MistakeWalkthrough({ issue, subject, topic }) {
+  if (!issue) return <section className="panel panel-pad lesson-mistake"><div className="eyebrow">start from a real attempt</div><h3>Answer a practice question first.</h3><p>Your next lesson will begin with the exact choice or step that needs attention—not a generic overview.</p><Link to={`/app/practice?subject=${encodeURIComponent(subject)}&topic=${encodeURIComponent(topic)}`} className="btn">Practice {topic}</Link></section>
+  return <section className="panel panel-pad lesson-mistake">
+    <div className="eyebrow">1 · the question you missed</div>
+    <RichText text={issue.questionText || issue.questionType || 'Your saved SAT question'} />
+    <div className="mistake-answer-row"><div><span>Your answer</span><RichText text={issue.studentAnswer || 'No answer recorded'} /></div><div className="correct"><span>Correct answer</span><RichText text={issue.correctAnswer || 'Not recorded'} /></div></div>
+    <div className="mistake-reason"><strong>What to change next time</strong><p>{issue.pattern || issue.reason || `Use the key ${topic} relationship before selecting an answer.`}</p></div>
+  </section>
+}
+
+function SimilarPractice({ questions, onAnswer }) {
+  if (!questions.length) return null
+  return <section className="similar-practice"><div><div className="eyebrow">4 · lock in the fix</div><h3>Try similar questions with a new setup.</h3><p>These test the same skill without repeating the question you missed.</p></div>{questions.map((question) => <LessonCheck key={question.id} question={question} onAnswer={onAnswer} label="similar question" />)}</section>
 }
 
 export default function VisualLessons() {
@@ -81,18 +96,22 @@ export default function VisualLessons() {
   if (!selected) return <div className="lessons-page"><div className="eyebrow">visual lessons</div><h2 className="page-title">Your visual lessons will appear here.</h2><p className="page-lede">Answer a few practice questions or log a miss first. We’ll turn the weakest skill into a focused visual explanation.</p><Link to="/app/practice" className="btn">Start practice</Link></div>
 
   const lesson = visualFor(selected.subject, selected.topic)
-  const lessonQuestion = PRACTICE_BANK.find((question) => question.topic === selected.topic)
-  const mainIssue = mistakes.find((mistake) => mistake.topic === selected.topic && mistake.correctness === 'Incorrect')
+  const missedQuestions = mistakes.filter((mistake) => mistake.topic === selected.topic && mistake.correctness === 'Incorrect')
+  const mainIssue = missedQuestions[0]
+  const lessonQuestions = PRACTICE_BANK.filter((question) => question.topic === selected.topic && question.prompt !== mainIssue?.questionText)
+    .sort((a, b) => Number(b.difficulty === 'Hard') - Number(a.difficulty === 'Hard'))
+  const similarQuestions = lessonQuestions.slice(0, 2)
   return <div className="lessons-page">
     <div className="eyebrow">visual lesson · built from your weak spot</div>
     <h2 className="page-title">{selected.topic}: learn the idea, then practise it.</h2>
-    <p className="page-lede">{lesson.idea}</p>
-    {mainIssue && <div className="lesson-main-issue"><span className="eyebrow">your main issue</span><strong>{mainIssue.pattern || mainIssue.reason}</strong><span>This lesson and its check focus only on fixing that move.</span></div>}
+    <p className="page-lede">This lesson starts with your miss, fixes the exact reasoning move, then gives you new versions to solve.</p>
+    <MistakeWalkthrough issue={mainIssue} subject={selected.subject} topic={selected.topic} />
+    {mainIssue && <div className="lesson-main-issue"><span className="eyebrow">2 · isolate the command issue</span><strong>{mainIssue.pattern || mainIssue.reason}</strong><span>Do this before looking for an answer choice. It is the one move this lesson is designed to repair.</span></div>}
     <div className="lesson-layout">
-      <section className="panel lesson-stage"><AnimatedDiagram subject={selected.subject} topic={selected.topic} /></section>
-      <section className="panel panel-pad lesson-steps"><div className="eyebrow">{lesson.kicker}</div>{lesson.steps.map((step, index) => <div className="lesson-step" key={step}><span>{index + 1}</span><p>{step}</p></div>)}<RichText text={selected.subject === 'Math' ? 'For example, watch how $y = 2x + 1$ changes when $x$ moves by one.' : 'Use this pattern on a fresh question while the idea is still visible.'} /><div className="lesson-actions"><Link to={`/app/practice?subject=${selected.subject}`} className="btn">Practice this skill</Link><Link to="/app/tutor" className="btn btn-ghost">Ask the tutor</Link></div></section>
+      <section className="panel panel-pad lesson-steps"><div className="eyebrow">3 · {lesson.kicker}</div>{lesson.steps.map((step, index) => <div className="lesson-step" key={step}><span>{index + 1}</span><p>{step}</p></div>)}<RichText text={selected.subject === 'Math' ? 'Use the model in the missed question: identify what changes, write the relationship, and check one concrete value before committing.' : 'Return to the exact words or sentence structure in the missed question before choosing an answer.'} /><div className="lesson-actions"><Link to={`/app/practice?subject=${encodeURIComponent(selected.subject)}&topic=${encodeURIComponent(selected.topic)}`} className="btn">Generate similar practice</Link><Link to="/app/tutor" className="btn btn-ghost">Ask the tutor</Link></div></section>
+      <section className="panel lesson-stage"><div className="lesson-visual-intro"><div className="eyebrow">see the corrected relationship</div><p>This interactive visual comes after the missed question so it explains a decision you have already seen.</p></div><AnimatedDiagram subject={selected.subject} topic={selected.topic} /></section>
     </div>
-    <LessonCheck question={lessonQuestion} onAnswer={addPracticeAttempt} />
+    <SimilarPractice questions={similarQuestions} onAnswer={addPracticeAttempt} />
     <section className="lesson-topic-strip"><div className="eyebrow">choose another weak spot</div>{ranked.slice(0, 5).map((item) => <Link key={item.topic} to={`/app/lessons?topic=${encodeURIComponent(item.topic)}`} className={`lesson-topic ${item.topic === selected.topic ? 'active' : ''}`}><span>{item.topic}</span><small>{item.score}%</small></Link>)}</section>
   </div>
 }

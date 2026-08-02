@@ -14,7 +14,7 @@ export default function AppLayout({ children }) {
       <div className="app-main">
         <header className="app-topbar">
           <div className="usage-pill">
-            {isSignedIn && usage.budget ? <span>${usage.budget.remainingUsd.toFixed(2)} AI credit left this month</span> : isSignedIn && usage.loading ? <span>Loading AI credit…</span> : isSignedIn ? <span>AI usage temporarily unavailable</span> : <span>Sign in to use AI tutoring</span>}
+            {isSignedIn && usage.budget ? <span>${usage.budget.spentUsd.toFixed(3)} used · ${usage.budget.remainingUsd.toFixed(2)} of ${usage.budget.limitUsd.toFixed(2)} AI credit left this month</span> : isSignedIn && usage.loading ? <span>Loading AI credit…</span> : isSignedIn ? <span>AI usage temporarily unavailable</span> : <span>Sign in to use AI tutoring</span>}
             {!isSignedIn && (
               <>
                 <span className="usage-divider">·</span>
