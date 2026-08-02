@@ -60,6 +60,7 @@ export default function Dashboard() {
               ))}
             </select>
           </div>
+          <a className="btn btn-ghost btn-sm college-board-link" href="https://satsuite.collegeboard.org/sat/registration/online-registration/registering" target="_blank" rel="noreferrer">Register with College Board ↗</a>
         </div>
 
         <div className="empty-state panel panel-pad"><h3>Then start with a short adaptive set</h3><p>You do not need to upload anything first. Answer original SAT-style questions and we’ll use your results to personalize the next session.</p><Link to="/app/practice" className="btn">Start practice</Link></div>
@@ -116,6 +117,7 @@ export default function Dashboard() {
             ))}
           </select>
         </div>
+        <a className="btn btn-ghost btn-sm college-board-link" href="https://satsuite.collegeboard.org/sat/registration/online-registration/registering" target="_blank" rel="noreferrer">Register with College Board ↗</a>
       </div>
 
       <div className="stat-grid">

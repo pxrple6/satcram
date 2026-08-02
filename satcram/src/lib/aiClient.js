@@ -40,7 +40,9 @@ export async function analyzeMistake(input) {
       throw new Error(err.error || `Analysis request failed (${res.status})`)
     }
 
-    return res.json()
+    const result = await res.json()
+    window.dispatchEvent(new Event('satcram:usage-updated'))
+    return result
   } catch (err) {
     console.warn('[SATcram] OpenAI unavailable, using offline mock:', err.message)
     return mockAnalyze(input)

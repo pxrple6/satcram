@@ -276,6 +276,28 @@ button {
 .visual-guide-card { display: flex; flex-direction: column; gap: 10px; }
 .visual-guide-steps { align-items: center; color: var(--muted); display: flex; flex-wrap: wrap; font-size: 12px; gap: 6px; }
 .visual-guide-steps i { color: var(--brand); font-style: normal; }
+.college-board-link { display: inline-flex; margin-top: 14px; }
+
+/* Adaptive practice needs explicit layout rules; these keep its controls from
+   falling back to unstyled inline links on a production build. */
+.practice-header { margin-bottom: 20px; }
+.practice-filters { align-items: center; display: flex; flex-wrap: wrap; gap: 8px; margin: 0 0 16px; }
+.filter-chip { background: var(--paper); border: 1px solid var(--line); border-radius: 999px; color: var(--ink-soft); font-size: 13px; padding: 7px 12px; text-decoration: none; }
+.filter-chip:hover, .filter-chip.active { background: var(--brand-soft); border-color: #d9defb; color: var(--brand-dark); }
+.practice-card { max-width: 900px; padding: 24px 28px; }
+.practice-card-head { align-items: center; display: flex; justify-content: space-between; margin-bottom: 26px; }
+.practice-tags { align-items: center; display: flex; flex-wrap: wrap; gap: 7px; }
+.subject-tag, .topic-tag, .domain-tag { border-radius: 999px; display: inline-flex; font-size: 12px; line-height: 1; padding: 6px 9px; }
+.subject-tag { background: var(--brand-soft); color: var(--brand-dark); font-weight: 700; }
+.topic-tag { background: var(--paper-dim); color: var(--ink-soft); }
+.domain-tag { background: #fff7df; color: #78580d; }
+.practice-counter { color: var(--muted); font-size: 12px; }
+.practice-question { font-size: 18px; line-height: 1.55; }
+.practice-question .rich-text > p { margin: 0; }
+.answer-choice .rich-text > p { margin: 0; }
+.answer-choice .katex { font-size: 1.08em; }
+.practice-feedback .rich-text > p { margin: 7px 0 0; }
+@media (max-width: 640px) { .practice-card { padding: 18px; } .practice-card-head { align-items: flex-start; gap: 12px; } }
 
 /* ---------- reusable "paper" panel ---------- */
 

@@ -105,6 +105,12 @@ function enforceUsageBudget(req, res, next) {
   next()
 }
 
+app.get('/api/usage', clerkAuthMiddleware, (req, res) => {
+  // This is intentionally sourced from the same server-side ledger that blocks
+  // requests, rather than a browser-only estimate.
+  res.json(usageLimitFor(usageKey(req)))
+})
+
 // Input validation helpers
 function validateAnalyzeInput(body) {
   if (!body || typeof body !== 'object') throw new Error('Invalid payload')

@@ -30,7 +30,9 @@ export async function sendTutorMessage(input) {
       throw new Error(err.error || `Tutor request failed (${res.status})`)
     }
 
-    return res.json()
+    const result = await res.json()
+    window.dispatchEvent(new Event('satcram:usage-updated'))
+    return result
   } catch (err) {
     console.warn('[SATcram] Tutor API unavailable, using offline mock:', err.message)
     return mockTutorReply(input)

@@ -14,13 +14,7 @@ export default function AppLayout({ children }) {
       <div className="app-main">
         <header className="app-topbar">
           <div className="usage-pill">
-            <span>
-              {usage.remaining.analyses} analysis{usage.remaining.analyses === 1 ? '' : 'es'} left today
-            </span>
-            <span className="usage-divider">·</span>
-            <span>
-              {usage.remaining.tutorMessages} tutor message{usage.remaining.tutorMessages === 1 ? '' : 's'} left
-            </span>
+            {isSignedIn && usage.budget ? <span>${usage.budget.remainingUsd.toFixed(2)} AI credit left this month</span> : isSignedIn && usage.loading ? <span>Loading AI credit…</span> : isSignedIn ? <span>AI usage temporarily unavailable</span> : <span>Sign in to use AI tutoring</span>}
             {!isSignedIn && (
               <>
                 <span className="usage-divider">·</span>

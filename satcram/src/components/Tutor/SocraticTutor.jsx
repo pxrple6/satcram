@@ -106,7 +106,7 @@ export default function SocraticTutor() {
                 <span>Question screenshot</span>
                 <span className="upload-optional">optional</span>
               </div>
-              <ImageDropzone images={images} onChange={setImages} maxImages={2} />
+              <ImageDropzone images={images} onChange={setImages} maxImages={1} />
             </section>
 
             <section>

@@ -1,46 +1,34 @@
-import { useCallback, useMemo, useState } from 'react'
-import { getLimits, loadUsage, saveUsage } from '../lib/usageLimits.js'
+import { useCallback, useEffect, useState } from 'react'
 
 export function useUsageLimit(userId, isSignedIn) {
-  const limits = getLimits(isSignedIn)
-  const [usage, setUsage] = useState(() => loadUsage(userId))
+  const [budget, setBudget] = useState(null)
+  const [loading, setLoading] = useState(true)
 
-  const refresh = useCallback(() => {
-    setUsage(loadUsage(userId))
-  }, [userId])
+  const refresh = useCallback(async () => {
+    if (!isSignedIn) { setBudget(null); setLoading(false); return }
+    try {
+      const headers = {}
+      const token = await window.Clerk?.session?.getToken()
+      if (token) headers.Authorization = `Bearer ${token}`
+      const response = await fetch('/api/usage', { headers })
+      if (!response.ok) throw new Error('Usage unavailable')
+      setBudget(await response.json())
+    } catch {
+      setBudget(null)
+    } finally { setLoading(false) }
+  }, [isSignedIn, userId])
 
-  const remaining = useMemo(
-    () => ({
-      analyses: Math.max(0, limits.analyses - usage.analyses),
-      tutorMessages: Math.max(0, limits.tutorMessages - usage.tutorMessages),
-    }),
-    [limits, usage]
-  )
-
-  const canAnalyze = remaining.analyses > 0
-  const canTutor = remaining.tutorMessages > 0
-
-  function recordAnalysis() {
-    const next = { ...loadUsage(userId), analyses: loadUsage(userId).analyses + 1 }
-    saveUsage(userId, next)
-    setUsage(next)
-  }
-
-  function recordTutorMessage() {
-    const current = loadUsage(userId)
-    const next = { ...current, tutorMessages: current.tutorMessages + 1 }
-    saveUsage(userId, next)
-    setUsage(next)
-  }
+  useEffect(() => { refresh() }, [refresh])
+  useEffect(() => {
+    window.addEventListener('satcram:usage-updated', refresh)
+    return () => window.removeEventListener('satcram:usage-updated', refresh)
+  }, [refresh])
 
   return {
-    limits,
-    usage,
-    remaining,
-    canAnalyze,
-    canTutor,
-    recordAnalysis,
-    recordTutorMessage,
+    budget,
+    loading,
+    canAnalyze: budget?.allowed ?? true,
+    canTutor: budget?.allowed ?? true,
     refresh,
   }
 }
