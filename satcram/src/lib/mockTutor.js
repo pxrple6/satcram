@@ -28,6 +28,26 @@ export function mockTutorReply({ messages }) {
   const userMsgs = messages.filter((m) => m.role === 'user')
   const assistantMsgs = messages.filter((m) => m.role === 'assistant')
 
+  const firstMessage = userMsgs[0]?.content || ''
+  if (firstMessage.startsWith('MISSED PRACTICE HANDOFF')) {
+    const subject = firstMessage.match(/Subject: (.+)/)?.[1] || 'SAT'
+    const topic = firstMessage.match(/Topic: (.+)/)?.[1] || 'the skill'
+    const chosen = firstMessage.match(/Student chose: (.+)/)?.[1] || 'your selected answer'
+    const correct = firstMessage.match(/Correct answer: (.+)/)?.[1] || 'the correct answer'
+    const math = subject === 'Math'
+    return {
+      message: `**Your answer:** ${chosen}\n\n**Correct answer:** ${correct}\n\nThe tutor service is unavailable, so this local guide cannot verify every calculation. Start by comparing the relationship the question asks for with the relationship used in your selected answer. For ${topic}, that comparison is the first thing to repair.`,
+      steps: [
+        { color: 'green', label: 'What the question gives', detail: 'Underline the quantities, evidence, or sentence parts that are explicitly stated.' },
+        { color: 'amber', label: 'What to check', detail: 'Name the relationship the question is testing before evaluating answer choices.' },
+        { color: 'red', label: 'The mismatch', detail: `Your choice (${chosen}) does not match the recorded correct answer (${correct}). Recheck the decisive relationship, not just the final number or wording.` },
+        { color: 'blue', label: 'Repair', detail: 'Work one concrete value, line of evidence, or sentence boundary through before choosing again.' },
+      ],
+      concept: { title: `${topic}: rebuild the relationship`, visualType: math ? 'input-output' : subject === 'Reading' ? 'evidence-ladder' : 'sentence-map', takeaway: math ? 'Input → rule → output: the correct answer must preserve the rule at every step.' : 'Move from the exact evidence or sentence structure to the answer; do not choose what merely sounds plausible.' },
+      retryPrompt: `Before selecting an answer, state the one ${topic} relationship this question is testing in your own words.`,
+    }
+  }
+
   // First turn: student just submitted the question
   if (userMsgs.length === 1 && assistantMsgs.length === 0) {
     return {

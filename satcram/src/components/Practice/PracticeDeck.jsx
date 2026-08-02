@@ -1,10 +1,11 @@
-import React, { useEffect, useMemo, useState } from 'react'
+import React, { useEffect, useState } from 'react'
 import { Link, useSearchParams } from '../../lib/router.jsx'
 import { useStore } from '../../App.jsx'
 import { PRACTICE_BANK } from '../../data/practiceBank.js'
 import { SUBJECT_COLORS } from '../../data/domains.js'
 import RichText from '../RichText.jsx'
 import { generatePracticeSet, recentPracticeStyles } from '../../lib/practiceClient.js'
+import { saveTutorHandoff } from '../../lib/tutorHandoff.js'
 
 function priorityDeck(mistakes, subject) {
   const weakTopics = [...mistakes]
@@ -17,37 +18,60 @@ function priorityDeck(mistakes, subject) {
     .map(({ question }) => question)
 }
 
+function diverseDeck(mistakes, subject, topic = '') {
+  const candidates = priorityDeck(mistakes, subject).filter((question) => !topic || question.topic === topic)
+  if (topic) return candidates
+  const byTopic = candidates.reduce((groups, question) => ({ ...groups, [question.topic]: [...(groups[question.topic] || []), question] }), {})
+  const topicOrder = Object.keys(byTopic)
+  const result = []
+  let round = 0
+  while (result.length < candidates.length) {
+    let added = false
+    for (const currentTopic of topicOrder) {
+      const question = byTopic[currentTopic][round]
+      if (question) { result.push(question); added = true }
+    }
+    if (!added) break
+    round += 1
+  }
+  return result
+}
+
 export default function PracticeDeck() {
   const { mistakes, addPracticeAttempt } = useStore()
   const [searchParams] = useSearchParams()
   const filterSubject = searchParams.get('subject') || ''
   const filterTopic = searchParams.get('topic') || ''
-  const rankedDeck = useMemo(() => priorityDeck(mistakes, filterSubject).filter((question) => !filterTopic || question.topic === filterTopic), [mistakes, filterSubject, filterTopic])
+  const focusTopic = searchParams.get('focus') || ''
   // Freeze a session at its first question. Recording an answer updates the
   // student's future recommendations, never the question currently on screen.
   const [sessionNumber, setSessionNumber] = useState(0)
-  const [deck, setDeck] = useState(() => priorityDeck(mistakes, filterSubject).filter((question) => !filterTopic || question.topic === filterTopic).slice(0, 10))
+  const [deck, setDeck] = useState(() => diverseDeck(mistakes, filterSubject, filterTopic).slice(0, 10))
   const [index, setIndex] = useState(0)
   const [selected, setSelected] = useState(null)
   const [submitted, setSubmitted] = useState(false)
   const [loadingFresh, setLoadingFresh] = useState(false)
   const [freshError, setFreshError] = useState('')
-  useEffect(() => { setDeck(priorityDeck(mistakes, filterSubject).filter((question) => !filterTopic || question.topic === filterTopic).slice(0, 10)); setIndex(0); setSelected(null); setSubmitted(false); setSessionNumber(0) }, [filterSubject, filterTopic])
+  useEffect(() => { setDeck(diverseDeck(mistakes, filterSubject, filterTopic).slice(0, 10)); setIndex(0); setSelected(null); setSubmitted(false); setSessionNumber(0) }, [filterSubject, filterTopic])
   useEffect(() => {
     let cancelled = false
     const priorityTopics = [...new Set(priorityDeck(mistakes, filterSubject).map((question) => question.topic))]
-    const rankedTopics = [...new Set([
-      ...priorityTopics.slice(0, 2),
-      ...(filterSubject && filterSubject !== 'Math' ? priorityTopics.slice(2, 4) : ['Functions', 'Quadratics']),
-    ])].slice(0, 4)
+    const discoveryTopics = filterSubject === 'Math'
+      ? ['Functions', 'Quadratics', 'Data & Statistics', 'Linear Equations', 'Ratios & Percents']
+      : filterSubject === 'Reading'
+        ? ['Inference', 'Main Idea', 'Words in Context', 'Evidence']
+        : filterSubject === 'Writing'
+          ? ['Punctuation', 'Transitions', 'Verb Agreement', 'Concision']
+          : ['Functions', 'Quadratics', 'Data & Statistics', 'Inference', 'Main Idea', 'Punctuation', 'Transitions']
+    const rankedTopics = [...new Set([focusTopic, ...priorityTopics.slice(0, 3), ...discoveryTopics].filter(Boolean))].slice(0, 8)
     const focus = priorityDeck(mistakes, filterSubject).find((question) => !filterTopic || question.topic === filterTopic)
     setLoadingFresh(true); setFreshError('')
-    generatePracticeSet({ subject: filterSubject || focus?.subject || 'Mixed SAT', topic: filterTopic || focus?.topic || 'Mixed SAT skills', topics: filterTopic ? [filterTopic] : rankedTopics, recentStyleTags: recentPracticeStyles() })
+    generatePracticeSet({ subject: filterSubject || 'Mixed SAT', topic: filterTopic || focusTopic || focus?.topic || 'Mixed SAT skills', topics: filterTopic ? [filterTopic, ...rankedTopics.filter((topic) => topic !== filterTopic)].slice(0, 5) : rankedTopics, recentStyleTags: recentPracticeStyles() })
       .then((questions) => { if (!cancelled) { setDeck(questions); setIndex(0); setSelected(null); setSubmitted(false) } })
       .catch(() => { if (!cancelled) setFreshError('Showing a fresh local set while AI questions are unavailable.') })
       .finally(() => { if (!cancelled) setLoadingFresh(false) })
     return () => { cancelled = true }
-  }, [filterSubject, filterTopic])
+  }, [filterSubject, filterTopic, focusTopic])
   const current = deck[index]
 
   function next() { setIndex((i) => Math.min(i + 1, deck.length - 1)); setSelected(null); setSubmitted(false) }
@@ -62,26 +86,23 @@ export default function PracticeDeck() {
     }
   }
   function startAnotherSet() {
-    const fullDeck = priorityDeck(mistakes, filterSubject).filter((question) => !filterTopic || question.topic === filterTopic)
+    const fullDeck = diverseDeck(mistakes, filterSubject, filterTopic)
     const nextSession = sessionNumber + 1
     const offset = (nextSession * 10) % fullDeck.length
     const nextDeck = [...fullDeck.slice(offset), ...fullDeck.slice(0, offset)].slice(0, 10)
     setDeck(nextDeck); setSessionNumber(nextSession); setIndex(0); setSelected(null); setSubmitted(false)
   }
   function openTutorForQuestion() {
-    try {
-      localStorage.setItem('satcram_tutor_handoff', JSON.stringify({
+    saveTutorHandoff(`practice-${current.id}`, {
         prompt: current.prompt,
         choices: current.choices,
         studentAnswer: selected,
         correctAnswer: current.answer,
         subject: current.subject,
         topic: current.topic,
-        incorrect: selected !== current.answer,
-      }))
-    } catch {
-      // The normal tutor route still works if browser storage is unavailable.
-    }
+        attempted: submitted,
+        incorrect: submitted && selected !== current.answer,
+      })
   }
   const bySubject = ['Math', 'Reading', 'Writing'].map((subject) => ({ subject, count: PRACTICE_BANK.filter((q) => q.subject === subject).length }))
 
@@ -97,7 +118,7 @@ export default function PracticeDeck() {
         <div className="practice-question"><RichText text={current.prompt} /></div>
         <div className="answer-choice-list">{current.choices.map((choice) => <button type="button" key={choice} disabled={submitted} onClick={() => setSelected(choice)} className={`answer-choice ${selected === choice ? 'selected' : ''} ${submitted && choice === current.answer ? 'correct-choice' : ''} ${submitted && selected === choice && choice !== current.answer ? 'incorrect-choice' : ''}`}><RichText text={choice} /></button>)}</div>
         {submitted && <div className="practice-feedback">{selected === current.answer ? <strong>Correct — nice work.</strong> : <div className="correct-answer"><strong>Not quite.</strong><span>The correct answer is</span><RichText text={current.answer} /></div>}<RichText text={current.explanation} /></div>}
-        <div className="practice-nav">{submitted ? <button type="button" className="btn" onClick={next} disabled={index === deck.length - 1}>Next question</button> : <button type="button" className="btn" disabled={!selected} onClick={submit}>Check answer</button>}<Link to={`/app/tutor?practice=${current.id}`} onClick={openTutorForQuestion} className="btn btn-ghost">{submitted && selected !== current.answer ? 'Tutor this miss' : 'Work through with tutor'}</Link></div>
+        <div className="practice-nav">{submitted ? <button type="button" className="btn" onClick={next} disabled={index === deck.length - 1}>Next question</button> : <button type="button" className="btn" disabled={!selected} onClick={submit}>Check answer</button>}<Link to={`/app/tutor?handoff=${encodeURIComponent(`practice-${current.id}`)}`} onClick={openTutorForQuestion} className="btn btn-ghost">{submitted && selected !== current.answer ? 'Tutor this miss' : 'Work through with tutor'}</Link></div>
       </div>}
       {submitted && index === deck.length - 1 && <div className="panel panel-pad practice-done"><div><div className="eyebrow">set complete</div><h3>Building your next study step.</h3><p>Opening your personalized study plan now…</p></div><div className="practice-done-actions"><Link to="/app/plan" className="btn">Open plan now</Link><button type="button" className="btn btn-ghost" onClick={startAnotherSet}>Start another set</button></div></div>}
     </div>

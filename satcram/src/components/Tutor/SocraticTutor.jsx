@@ -6,6 +6,7 @@ import { useSearchParams } from '../../lib/router.jsx'
 import { PRACTICE_BANK } from '../../data/practiceBank.js'
 import WorkPad from './WorkPad.jsx'
 import AnnotatedWork from './AnnotatedWork.jsx'
+import { takeTutorHandoff } from '../../lib/tutorHandoff.js'
 
 function ChatBubble({ role, text }) {
   const isTutor = role === 'assistant'
@@ -87,17 +88,17 @@ export default function SocraticTutor() {
 
   useEffect(() => {
     const practiceId = searchParams.get('practice')
-    let handoff
-    try { handoff = JSON.parse(localStorage.getItem('satcram_tutor_handoff') || 'null') } catch { handoff = null }
+    const handoff = takeTutorHandoff(searchParams.get('handoff'))
     if (handoff?.prompt && !startedPracticeRef.current) {
       startedPracticeRef.current = true
       const choices = handoff.choices?.map((choice, index) => `${String.fromCharCode(65 + index)}. ${choice}`).join('\n') || ''
-      const first = { role: 'user', content: `MISSED PRACTICE HANDOFF\nSubject: ${handoff.subject || 'SAT'}\nTopic: ${handoff.topic || 'SAT skill'}\nQuestion:\n${handoff.prompt}\nChoices:\n${choices}\nStudent chose: ${handoff.studentAnswer || 'No answer'}\nCorrect answer: ${handoff.correctAnswer || 'Unknown'}\nTeach this exact ${handoff.incorrect ? 'incorrect' : 'completed'} attempt with a visual concept and a close retry.` }
+      const first = handoff.attempted
+        ? { role: 'user', content: `MISSED PRACTICE HANDOFF\nSubject: ${handoff.subject || 'SAT'}\nTopic: ${handoff.topic || 'SAT skill'}\nQuestion:\n${handoff.prompt}\nChoices:\n${choices}\nStudent chose: ${handoff.studentAnswer || 'No answer'}\nCorrect answer: ${handoff.correctAnswer || 'Unknown'}\nTeach this exact ${handoff.incorrect ? 'incorrect' : 'completed'} attempt with a visual concept and a close retry.` }
+        : { role: 'user', content: `${handoff.prompt}${choices ? `\n\nChoices:\n${choices}` : ''}` }
       setQuestionText(handoff.prompt)
       setStarted(true)
       setMessages([first])
-      localStorage.removeItem('satcram_tutor_handoff')
-      callTutor([first], { visualLesson: true })
+      callTutor([first], { visualLesson: Boolean(handoff.attempted) })
       return
     }
     const practiceQuestion = PRACTICE_BANK.find((question) => question.id === practiceId)

@@ -3,6 +3,7 @@ import { Link, useSearchParams } from '../../lib/router.jsx'
 import { useStore } from '../../App.jsx'
 import RichText from '../RichText.jsx'
 import { PRACTICE_BANK } from '../../data/practiceBank.js'
+import { saveTutorHandoff } from '../../lib/tutorHandoff.js'
 
 function visualFor(subject, topic) {
   if (subject === 'Math') return { kicker: 'See the relationship', title: `${topic}: make the invisible visible`, idea: 'Change one value at a time, then follow what the equation does.', steps: ['Label what changes', 'Show the relationship', 'Check one concrete example'] }
@@ -101,6 +102,20 @@ export default function VisualLessons() {
   const lessonQuestions = PRACTICE_BANK.filter((question) => question.topic === selected.topic && question.prompt !== mainIssue?.questionText)
     .sort((a, b) => Number(b.difficulty === 'Hard') - Number(a.difficulty === 'Hard'))
   const similarQuestions = lessonQuestions.slice(0, 2)
+  const tutorHandoffId = mainIssue ? `lesson-${mainIssue.id}` : ''
+  function openTutorForIssue() {
+    if (!mainIssue) return
+    saveTutorHandoff(tutorHandoffId, {
+        prompt: mainIssue.questionText || mainIssue.extractedQuestion || `A ${selected.topic} SAT question`,
+        choices: mainIssue.answerChoices || [],
+        studentAnswer: mainIssue.studentAnswer,
+        correctAnswer: mainIssue.correctAnswer,
+        subject: selected.subject,
+        topic: selected.topic,
+        attempted: true,
+        incorrect: true,
+      })
+  }
   return <div className="lessons-page">
     <div className="eyebrow">visual lesson · built from your weak spot</div>
     <h2 className="page-title">{selected.topic}: learn the idea, then practise it.</h2>
@@ -108,7 +123,7 @@ export default function VisualLessons() {
     <MistakeWalkthrough issue={mainIssue} subject={selected.subject} topic={selected.topic} />
     {mainIssue && <div className="lesson-main-issue"><span className="eyebrow">2 · isolate the command issue</span><strong>{mainIssue.pattern || mainIssue.reason}</strong><span>Do this before looking for an answer choice. It is the one move this lesson is designed to repair.</span></div>}
     <div className="lesson-layout">
-      <section className="panel panel-pad lesson-steps"><div className="eyebrow">3 · {lesson.kicker}</div>{lesson.steps.map((step, index) => <div className="lesson-step" key={step}><span>{index + 1}</span><p>{step}</p></div>)}<RichText text={selected.subject === 'Math' ? 'Use the model in the missed question: identify what changes, write the relationship, and check one concrete value before committing.' : 'Return to the exact words or sentence structure in the missed question before choosing an answer.'} /><div className="lesson-actions"><Link to={`/app/practice?subject=${encodeURIComponent(selected.subject)}&topic=${encodeURIComponent(selected.topic)}`} className="btn">Generate similar practice</Link><Link to="/app/tutor" className="btn btn-ghost">Ask the tutor</Link></div></section>
+      <section className="panel panel-pad lesson-steps"><div className="eyebrow">3 · {lesson.kicker}</div>{lesson.steps.map((step, index) => <div className="lesson-step" key={step}><span>{index + 1}</span><p>{step}</p></div>)}<RichText text={selected.subject === 'Math' ? 'Use the model in the missed question: identify what changes, write the relationship, and check one concrete value before committing.' : 'Return to the exact words or sentence structure in the missed question before choosing an answer.'} /><div className="lesson-actions"><Link to={`/app/practice?subject=${encodeURIComponent(selected.subject)}&focus=${encodeURIComponent(selected.topic)}`} className="btn">Generate varied practice</Link><Link to={`/app/tutor?handoff=${encodeURIComponent(tutorHandoffId)}`} onClick={openTutorForIssue} className="btn btn-ghost">Tutor this missed question</Link></div></section>
       <section className="panel lesson-stage"><div className="lesson-visual-intro"><div className="eyebrow">see the corrected relationship</div><p>This interactive visual comes after the missed question so it explains a decision you have already seen.</p></div><AnimatedDiagram subject={selected.subject} topic={selected.topic} /></section>
     </div>
     <SimilarPractice questions={similarQuestions} onAnswer={addPracticeAttempt} />
