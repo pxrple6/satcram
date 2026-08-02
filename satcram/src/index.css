@@ -1506,3 +1506,6 @@ select:focus {
 .schedule-math { background: #e9edff; color: #34479d; }
 .schedule-reading { background: #e8f6ef; color: #25734b; }
 .schedule-writing { background: #fff3df; color: #825b16; }
+.tutor-mode-switch { display: flex; flex-wrap: wrap; gap: 8px; margin-bottom: 20px; }
+.tutor-mode-switch button { cursor: pointer; font-family: inherit; }
+.work-pad { border: 1px solid var(--line); border-radius: 10px; overflow: hidden; }.work-pad-head { align-items: center; background: var(--paper-dim); display: flex; font-size: 13px; justify-content: space-between; padding: 9px 12px; }.work-pad canvas { background: #fff; cursor: crosshair; display: block; max-width: 100%; touch-action: none; width: 100%; }.work-pad p { color: var(--muted); font-size: 12px; margin: 0; padding: 9px 12px; }

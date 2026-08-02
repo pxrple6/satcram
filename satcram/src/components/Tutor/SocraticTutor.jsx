@@ -4,6 +4,7 @@ import RichText from '../RichText.jsx'
 import { sendTutorMessage } from '../../lib/tutorClient.js'
 import { useSearchParams } from '../../lib/router.jsx'
 import { PRACTICE_BANK } from '../../data/practiceBank.js'
+import WorkPad from './WorkPad.jsx'
 
 function ChatBubble({ role, text }) {
   const isTutor = role === 'assistant'
@@ -19,6 +20,8 @@ export default function SocraticTutor() {
   const [searchParams] = useSearchParams()
   const [questionText, setQuestionText] = useState('')
   const [images, setImages] = useState([])
+  const [reviewMode, setReviewMode] = useState('question')
+  const [drawnWork, setDrawnWork] = useState('')
   const [messages, setMessages] = useState([])
   const [input, setInput] = useState('')
   const [started, setStarted] = useState(false)
@@ -28,7 +31,8 @@ export default function SocraticTutor() {
   const inputRef = useRef(null)
   const startedPracticeRef = useRef(false)
 
-  const hasQuestion = questionText.trim() || images.length > 0
+  const activeImages = reviewMode === 'draw' && drawnWork ? [{ id: 'drawn-work', dataUrl: drawnWork }] : images
+  const hasQuestion = questionText.trim() || activeImages.length > 0
   const hasAskedForAnswer = messages.some((m) => m.role === 'assistant')
   const studentReplies = messages.filter((m, i) => m.role === 'user' && i > 0).length
   const awaitingAnswer = started && hasAskedForAnswer && studentReplies === 0
@@ -73,8 +77,8 @@ export default function SocraticTutor() {
 
     const first = {
       role: 'user',
-      content: questionText.trim() || '(Screenshot attached — see image.)',
-      images: images.map((img) => img.dataUrl),
+      content: reviewMode === 'question' ? (questionText.trim() || '(Screenshot attached — see image.)') : `WORK REVIEW MODE. ${questionText.trim() || 'Review the handwritten work in the image and identify the first step to revisit.'}`,
+      images: activeImages.map((img) => img.dataUrl),
     }
     setStarted(true)
     setMessages([first])
@@ -101,6 +105,8 @@ export default function SocraticTutor() {
     setMessages([])
     setQuestionText('')
     setImages([])
+    setDrawnWork('')
+    setReviewMode('question')
     setInput('')
     setError('')
   }
@@ -109,31 +115,31 @@ export default function SocraticTutor() {
     return (
       <div className="tutor-page">
         <div className="eyebrow">AI tutor</div>
-        <h2 className="page-title">Practice a question</h2>
+        <h2 className="page-title">Solve, then get feedback on your work.</h2>
         <p className="page-lede">
-          Paste or screenshot a SAT question. The tutor will ask for your answer first — then give
-          hints if you're stuck, and only explain fully when you need it.
+          Work through an SAT question yourself. Upload your paper or draw your steps here, and the tutor will point to the first reasoning move to fix.
         </p>
 
         <form onSubmit={handleStart} className="panel panel-pad tutor-setup">
+          <div className="tutor-mode-switch"><button type="button" className={`filter-chip ${reviewMode === 'question' ? 'active' : ''}`} onClick={() => setReviewMode('question')}>Question only</button><button type="button" className={`filter-chip ${reviewMode === 'photo' ? 'active' : ''}`} onClick={() => setReviewMode('photo')}>Upload my work</button><button type="button" className={`filter-chip ${reviewMode === 'draw' ? 'active' : ''}`} onClick={() => setReviewMode('draw')}>Draw my work</button></div>
           <div className="upload-layout">
             <section>
               <div className="upload-section-label">
-                <span>Question screenshot</span>
+                <span>{reviewMode === 'question' ? 'Question screenshot' : reviewMode === 'photo' ? 'Photo of your work' : 'Your handwritten work'}</span>
                 <span className="upload-optional">optional</span>
               </div>
-              <ImageDropzone images={images} onChange={setImages} maxImages={1} />
+              {reviewMode === 'draw' ? <WorkPad value={drawnWork} onChange={setDrawnWork} /> : <ImageDropzone images={images} onChange={setImages} maxImages={1} />}
             </section>
 
             <section>
               <label className="field">
-                Question text {images.length > 0 ? '(optional)' : ''}
+                {reviewMode === 'question' ? 'Question text' : 'Original question or goal'} {activeImages.length > 0 ? '(optional)' : ''}
                 <textarea
                   rows={5}
                   placeholder={
                     images.length > 0
-                      ? 'Add context if the screenshot is cropped…'
-                      : 'Paste or type the full question…'
+                    ? 'Add the original question or context…'
+                    : reviewMode === 'question' ? 'Paste or type the full question…' : 'Paste the question you were solving…'
                   }
                   value={questionText}
                   onChange={(e) => setQuestionText(e.target.value)}
@@ -149,7 +155,7 @@ export default function SocraticTutor() {
                     Starting…
                   </>
                 ) : (
-                  'Start session'
+                  reviewMode === 'question' ? 'Start session' : 'Review my work'
                 )}
               </button>
             </section>
@@ -159,10 +165,10 @@ export default function SocraticTutor() {
         <div className="tutor-flow-hint panel panel-pad">
           <div className="eyebrow">how this works</div>
           <ol className="tutor-steps">
-            <li>You share the question (text or image)</li>
-            <li>Tutor asks what answer you'd pick</li>
-            <li>You try — get a hint if you're wrong</li>
-            <li>Still stuck? Ask for the full explanation</li>
+            <li>Choose a question, photo, or drawn-work review</li>
+            <li>Solve the problem in your own words or steps</li>
+            <li>Tutor flags the first incorrect step only</li>
+            <li>Repair that step, then continue</li>
           </ol>
         </div>
       </div>
@@ -183,9 +189,9 @@ export default function SocraticTutor() {
         </button>
       </div>
 
-      {images.length > 0 && (
+      {activeImages.length > 0 && (
         <div className="tutor-question-images">
-          {images.map((img) => (
+          {activeImages.map((img) => (
             <img key={img.id} src={img.dataUrl} alt="Question screenshot" />
           ))}
         </div>

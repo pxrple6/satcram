@@ -6,9 +6,9 @@ const PRACTICE_SYSTEM = `Create ORIGINAL, SAT-aligned Digital SAT practice quest
 Return only JSON with this shape:
 {"questions":[{"id":string,"subject":"Math"|"Reading"|"Writing","topic":string,"difficulty":"Easy"|"Medium"|"Hard","prompt":string,"choices":string[],"answer":string,"explanation":string}]}
 
-Make exactly 10 multiple-choice questions. Use four plausible choices per question, exactly one correct choice, and include the exact answer string in choices. Match the reasoning and wording complexity of a current digital SAT question; do not create trivial arithmetic drills. Math must use $...$ delimiters for every expression. Explanations should identify the decisive reasoning step in 1-3 sentences.`
+Make exactly 10 multiple-choice questions. Use four plausible choices per question, exactly one correct choice, and include the exact answer string in choices. Match the reasoning and wording complexity of a current digital SAT question at roughly the 60th percentile or above; use multi-step reasoning, realistic distractors, and common misconception traps. Do not create trivial arithmetic drills. When multiple focus topics are supplied, distribute questions across them and include no more than three questions for any one topic. Math must use $...$ delimiters for every expression. Explanations should identify the decisive reasoning step in 1-3 sentences.`
 
-export async function generatePracticeWithOpenAI({ subject, topic }, apiKey) {
+export async function generatePracticeWithOpenAI({ subject, topic, topics }, apiKey) {
   const response = await fetch('https://api.openai.com/v1/chat/completions', {
     method: 'POST',
     headers: { Authorization: `Bearer ${apiKey}`, 'Content-Type': 'application/json' },
@@ -19,7 +19,7 @@ export async function generatePracticeWithOpenAI({ subject, topic }, apiKey) {
       max_completion_tokens: 2800,
       messages: [
         { role: 'system', content: PRACTICE_SYSTEM },
-        { role: 'user', content: JSON.stringify({ subject: subject || 'Math', topic: topic || 'Mixed SAT skills', goal: 'a fresh adaptive practice set' }) },
+        { role: 'user', content: JSON.stringify({ subject: subject || 'Mixed SAT', primaryTopic: topic || 'Mixed SAT skills', focusTopics: Array.isArray(topics) ? topics.slice(0, 4) : [], goal: 'a fresh adaptive practice set with varied topic coverage' }) },
       ],
     }),
   })

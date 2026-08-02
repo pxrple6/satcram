@@ -34,9 +34,14 @@ export default function PracticeDeck() {
   useEffect(() => { setDeck(priorityDeck(mistakes, filterSubject).slice(0, 10)); setIndex(0); setSelected(null); setSubmitted(false); setSessionNumber(0) }, [filterSubject])
   useEffect(() => {
     let cancelled = false
+    const priorityTopics = [...new Set(priorityDeck(mistakes, filterSubject).map((question) => question.topic))]
+    const rankedTopics = [...new Set([
+      ...priorityTopics.slice(0, 2),
+      ...(filterSubject && filterSubject !== 'Math' ? priorityTopics.slice(2, 4) : ['Functions', 'Quadratics']),
+    ])].slice(0, 4)
     const focus = priorityDeck(mistakes, filterSubject)[0]
     setLoadingFresh(true); setFreshError('')
-    generatePracticeSet({ subject: filterSubject || focus?.subject || 'Math', topic: focus?.topic || 'Mixed SAT skills' })
+    generatePracticeSet({ subject: filterSubject || focus?.subject || 'Mixed SAT', topic: focus?.topic || 'Mixed SAT skills', topics: rankedTopics })
       .then((questions) => { if (!cancelled) { setDeck(questions); setIndex(0); setSelected(null); setSubmitted(false) } })
       .catch(() => { if (!cancelled) setFreshError('Showing a fresh local set while AI questions are unavailable.') })
       .finally(() => { if (!cancelled) setLoadingFresh(false) })
