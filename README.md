@@ -89,9 +89,6 @@ There are still quite a few things I want to add:
 
 About
 
-SATcram is built by Anusha Garg, a student developer interested in computer science, AI, and building useful things with technology.
-
 GitHub: [@pxrple6](https://github.com/pxrple6)
 
-
-SATcram is still evolving, so if you come across the project, expect things to change as I keep building it.
+SATcram is still evolving, so if you come across the project, expect things to change as I keep building it. I did use AI to help me with debugging and deployment which took about 2 hours out of the total 14 hours for version 1 and that is about 15% 
