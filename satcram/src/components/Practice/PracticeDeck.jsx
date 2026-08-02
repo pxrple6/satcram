@@ -68,6 +68,21 @@ export default function PracticeDeck() {
     const nextDeck = [...fullDeck.slice(offset), ...fullDeck.slice(0, offset)].slice(0, 10)
     setDeck(nextDeck); setSessionNumber(nextSession); setIndex(0); setSelected(null); setSubmitted(false)
   }
+  function openTutorForQuestion() {
+    try {
+      localStorage.setItem('satcram_tutor_handoff', JSON.stringify({
+        prompt: current.prompt,
+        choices: current.choices,
+        studentAnswer: selected,
+        correctAnswer: current.answer,
+        subject: current.subject,
+        topic: current.topic,
+        incorrect: selected !== current.answer,
+      }))
+    } catch {
+      // The normal tutor route still works if browser storage is unavailable.
+    }
+  }
   const bySubject = ['Math', 'Reading', 'Writing'].map((subject) => ({ subject, count: PRACTICE_BANK.filter((q) => q.subject === subject).length }))
 
   return (
@@ -82,7 +97,7 @@ export default function PracticeDeck() {
         <div className="practice-question"><RichText text={current.prompt} /></div>
         <div className="answer-choice-list">{current.choices.map((choice) => <button type="button" key={choice} disabled={submitted} onClick={() => setSelected(choice)} className={`answer-choice ${selected === choice ? 'selected' : ''} ${submitted && choice === current.answer ? 'correct-choice' : ''} ${submitted && selected === choice && choice !== current.answer ? 'incorrect-choice' : ''}`}><RichText text={choice} /></button>)}</div>
         {submitted && <div className="practice-feedback">{selected === current.answer ? <strong>Correct — nice work.</strong> : <div className="correct-answer"><strong>Not quite.</strong><span>The correct answer is</span><RichText text={current.answer} /></div>}<RichText text={current.explanation} /></div>}
-        <div className="practice-nav">{submitted ? <button type="button" className="btn" onClick={next} disabled={index === deck.length - 1}>Next question</button> : <button type="button" className="btn" disabled={!selected} onClick={submit}>Check answer</button>}<Link to={`/app/tutor?practice=${current.id}`} className="btn btn-ghost">Work through with tutor</Link></div>
+        <div className="practice-nav">{submitted ? <button type="button" className="btn" onClick={next} disabled={index === deck.length - 1}>Next question</button> : <button type="button" className="btn" disabled={!selected} onClick={submit}>Check answer</button>}<Link to={`/app/tutor?practice=${current.id}`} onClick={openTutorForQuestion} className="btn btn-ghost">{submitted && selected !== current.answer ? 'Tutor this miss' : 'Work through with tutor'}</Link></div>
       </div>}
       {submitted && index === deck.length - 1 && <div className="panel panel-pad practice-done"><div><div className="eyebrow">set complete</div><h3>Building your next study step.</h3><p>Opening your personalized study plan now…</p></div><div className="practice-done-actions"><Link to="/app/plan" className="btn">Open plan now</Link><button type="button" className="btn btn-ghost" onClick={startAnotherSet}>Start another set</button></div></div>}
     </div>

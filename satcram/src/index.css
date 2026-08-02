@@ -1510,6 +1510,17 @@ select:focus {
 .similar-practice h3 { margin: 4px 0; }
 .similar-practice > div > p { color: var(--muted); margin: 4px 0; }
 @media (max-width: 620px) { .mistake-answer-row { grid-template-columns: 1fr; } }
+.annotation-legend { display: flex; flex-wrap: wrap; gap: 8px; margin: 8px 0 16px; }
+.annotation-legend span { border-radius: 99px; font-size: 12px; font-weight: 700; padding: 5px 9px; }
+.mark-green { background: #e6f7ed; color: #157348; }.mark-amber { background: #fff4db; color: #95610c; }.mark-red { background: #ffeaec; color: #ba2630; }.mark-blue { background: #e8edff; color: #2943bd; }
+.tutor-concept { background: linear-gradient(135deg, #f6f7ff, #fff); border: 1px solid #d8defa; border-radius: 16px; margin: 16px 0; max-width: 900px; padding: 20px; }
+.tutor-concept h3 { margin: 4px 0 12px; }.tutor-concept > p { color: var(--muted); margin: 12px 0 0; }
+.concept-canvas { align-items: center; background: #fff; border: 1px solid #e2e6f6; border-radius: 12px; display: flex; gap: 12px; justify-content: center; min-height: 160px; overflow: hidden; padding: 22px; position: relative; }
+.concept-box, .concept-rule { border-radius: 10px; font-size: 14px; font-weight: 700; padding: 13px 18px; }.concept-box { background: #eff2ff; border: 1px solid #bfcaff; }.concept-rule { background: #3654f0; color: #fff; }.concept-arrow { color: #3654f0; font-size: 27px; font-weight: 700; }
+.concept-rung { background: #f5f6fa; border: 1px solid var(--line); border-radius: 9px; display: block; font-size: 14px; font-weight: 650; padding: 10px 14px; position: relative; text-align: center; width: min(300px, 82%); }.concept-rung:nth-child(2) { transform: translateY(-2px); }.concept-rung.active { background: #e8edff; border-color: #aebdff; color: #2943bd; }.tutor-concept-evidence-ladder .concept-canvas, .tutor-concept-sentence-map .concept-canvas { flex-direction: column; gap: 7px; }
+.concept-axis { background: #8790a3; display: block; position: absolute; }.axis-x { height: 1px; left: 14%; right: 14%; top: 70%; }.axis-y { bottom: 14%; left: 42%; top: 14%; width: 1px; }.concept-line { background: #3654f0; height: 3px; left: 26%; position: absolute; top: 55%; transform: rotate(-29deg); transform-origin: left center; width: 52%; }.concept-dot { background: #3654f0; border: 3px solid #fff; border-radius: 50%; box-shadow: 0 0 0 2px #3654f0; height: 10px; position: absolute; width: 10px; }.dot-a { left: 36%; top: 59%; }.dot-b { left: 60%; top: 42%; }
+.concept-retry { background: #fff; border-left: 3px solid #3654f0; margin-top: 15px; padding: 10px 12px; }.concept-retry p { margin: 4px 0 0; }
+.tutor-step-map { display: grid; gap: 8px; grid-template-columns: repeat(2, minmax(0, 1fr)); margin-top: 15px; }.tutor-step-card { background: #fff; border-left: 3px solid currentColor; border-radius: 8px; padding: 10px; }.tutor-step-card span { font-size: 13px; font-weight: 750; }.tutor-step-card p { color: var(--ink); font-size: 13px; line-height: 1.4; margin: 4px 0 0; }.tutor-step-card.mark-green { color: #157348; }.tutor-step-card.mark-amber { color: #95610c; }.tutor-step-card.mark-red { color: #ba2630; }.tutor-step-card.mark-blue { color: #2943bd; }@media (max-width: 620px) { .tutor-step-map { grid-template-columns: 1fr; } }
 .practice-status { color: var(--muted); font-size: 13px; margin: 8px 0 0; }
 .weekly-schedule { margin-top: 20px; }
 .weekly-schedule h3 { font-size: 18px; margin: 5px 0 18px; }

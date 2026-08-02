@@ -17,6 +17,23 @@ function ChatBubble({ role, text }) {
   )
 }
 
+function TutorConceptVisual({ concept, retryPrompt, steps = [] }) {
+  if (!concept) return null
+  const visual = concept.visualType || 'input-output'
+  return <section className={`tutor-concept tutor-concept-${visual}`}>
+    <div className="eyebrow">see the idea</div><h3>{concept.title}</h3>
+    <div className="concept-canvas" aria-label={`${concept.title} visual explanation`}>
+      {visual === 'coordinate-plane' && <><span className="concept-axis axis-x" /><span className="concept-axis axis-y" /><span className="concept-line" /><span className="concept-dot dot-a" /><span className="concept-dot dot-b" /></>}
+      {visual === 'input-output' && <><span className="concept-box">input</span><span className="concept-arrow">→</span><span className="concept-rule">rule</span><span className="concept-arrow">→</span><span className="concept-box">output</span></>}
+      {visual === 'evidence-ladder' && <><span className="concept-rung">exact words</span><span className="concept-rung">reasonable inference</span><span className="concept-rung active">answer choice</span></>}
+      {visual === 'sentence-map' && <><span className="concept-rung">first clause</span><span className="concept-rung">relationship</span><span className="concept-rung active">punctuation / transition</span></>}
+    </div>
+    <p>{concept.takeaway}</p>
+    {steps.length > 0 && <div className="tutor-step-map">{steps.slice(0, 4).map((step, index) => <div className={`tutor-step-card mark-${step.color || 'blue'}`} key={`${step.label}-${index}`}><span>{step.label}</span><p>{step.detail}</p></div>)}</div>}
+    {retryPrompt && <div className="concept-retry"><strong>Quick retry</strong><p>{retryPrompt}</p></div>}
+  </section>
+}
+
 export default function SocraticTutor() {
   const [searchParams] = useSearchParams()
   const [questionText, setQuestionText] = useState('')
@@ -28,7 +45,10 @@ export default function SocraticTutor() {
   const [started, setStarted] = useState(false)
   const [busy, setBusy] = useState(false)
   const [error, setError] = useState('')
-  const [annotation, setAnnotation] = useState(null)
+  const [annotations, setAnnotations] = useState([])
+  const [concept, setConcept] = useState(null)
+  const [retryPrompt, setRetryPrompt] = useState(null)
+  const [visualSteps, setVisualSteps] = useState([])
   const chatEndRef = useRef(null)
   const inputRef = useRef(null)
   const startedPracticeRef = useRef(false)
@@ -52,9 +72,12 @@ export default function SocraticTutor() {
     setBusy(true)
     setError('')
     try {
-      const { message, annotation: nextAnnotation } = await sendTutorMessage({ messages: nextMessages, workReview: options.workReview })
+      const { message, annotations: nextAnnotations, concept: nextConcept, retryPrompt: nextRetryPrompt, steps: nextSteps } = await sendTutorMessage({ messages: nextMessages, workReview: options.workReview, visualLesson: options.visualLesson })
       setMessages([...nextMessages, { role: 'assistant', content: message }])
-      if (nextAnnotation) setAnnotation(nextAnnotation)
+      if (nextAnnotations?.length) setAnnotations(nextAnnotations)
+      if (nextConcept) setConcept(nextConcept)
+      if (nextRetryPrompt) setRetryPrompt(nextRetryPrompt)
+      if (nextSteps?.length) setVisualSteps(nextSteps)
     } catch (err) {
       setError(err.message || 'Something went wrong.')
     } finally {
@@ -64,6 +87,19 @@ export default function SocraticTutor() {
 
   useEffect(() => {
     const practiceId = searchParams.get('practice')
+    let handoff
+    try { handoff = JSON.parse(localStorage.getItem('satcram_tutor_handoff') || 'null') } catch { handoff = null }
+    if (handoff?.prompt && !startedPracticeRef.current) {
+      startedPracticeRef.current = true
+      const choices = handoff.choices?.map((choice, index) => `${String.fromCharCode(65 + index)}. ${choice}`).join('\n') || ''
+      const first = { role: 'user', content: `MISSED PRACTICE HANDOFF\nSubject: ${handoff.subject || 'SAT'}\nTopic: ${handoff.topic || 'SAT skill'}\nQuestion:\n${handoff.prompt}\nChoices:\n${choices}\nStudent chose: ${handoff.studentAnswer || 'No answer'}\nCorrect answer: ${handoff.correctAnswer || 'Unknown'}\nTeach this exact ${handoff.incorrect ? 'incorrect' : 'completed'} attempt with a visual concept and a close retry.` }
+      setQuestionText(handoff.prompt)
+      setStarted(true)
+      setMessages([first])
+      localStorage.removeItem('satcram_tutor_handoff')
+      callTutor([first], { visualLesson: true })
+      return
+    }
     const practiceQuestion = PRACTICE_BANK.find((question) => question.id === practiceId)
     if (!practiceQuestion || startedPracticeRef.current) return
     startedPracticeRef.current = true
@@ -112,7 +148,10 @@ export default function SocraticTutor() {
     setReviewMode('question')
     setInput('')
     setError('')
-    setAnnotation(null)
+    setAnnotations([])
+    setConcept(null)
+    setRetryPrompt(null)
+    setVisualSteps([])
   }
 
   if (!started) {
@@ -194,9 +233,9 @@ export default function SocraticTutor() {
       </div>
 
       {activeImages.length > 0 && (
-        <div className="tutor-question-images">
-          {reviewMode === 'question' ? activeImages.map((img) => <img key={img.id} src={img.dataUrl} alt="Question screenshot" />) : <AnnotatedWork image={activeImages[0]?.dataUrl} annotation={annotation} />}
-        </div>
+        <><div className="tutor-question-images">
+          {reviewMode === 'question' ? activeImages.map((img) => <img key={img.id} src={img.dataUrl} alt="Question screenshot" />) : <AnnotatedWork image={activeImages[0]?.dataUrl} annotations={annotations} />}
+        </div>{annotations.length > 0 && <div className="annotation-legend"><span className="mark-green">Valid setup</span><span className="mark-amber">Check closely</span><span className="mark-red">First error</span><span className="mark-blue">Repair</span></div>}</>
       )}
 
       {questionText.trim() && (
@@ -205,6 +244,8 @@ export default function SocraticTutor() {
           <p>{questionText}</p>
         </div>
       )}
+
+      {concept && <TutorConceptVisual concept={concept} retryPrompt={retryPrompt} steps={visualSteps} />}
 
       <div className="tutor-chat panel">
         <div className="tutor-chat-messages">
