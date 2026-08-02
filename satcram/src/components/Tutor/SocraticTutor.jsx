@@ -117,14 +117,14 @@ export default function SocraticTutor() {
 
   if (!started) {
     return (
-      <div className="tutor-page">
+      <div className={`tutor-page ${reviewMode === 'draw' ? 'workspace-mode' : ''}`}>
         <div className="eyebrow">AI tutor</div>
         <h2 className="page-title">Solve, then get feedback on your work.</h2>
         <p className="page-lede">
           Work through an SAT question yourself. Upload your paper or draw your steps here, and the tutor will point to the first reasoning move to fix.
         </p>
 
-        <form onSubmit={handleStart} className="panel panel-pad tutor-setup">
+        <form onSubmit={handleStart} className={`panel panel-pad tutor-setup ${reviewMode === 'draw' ? 'work-review-setup' : ''}`}>
           <div className="tutor-mode-switch"><button type="button" className={`filter-chip ${reviewMode === 'question' ? 'active' : ''}`} onClick={() => setReviewMode('question')}>Question only</button><button type="button" className={`filter-chip ${reviewMode === 'photo' ? 'active' : ''}`} onClick={() => setReviewMode('photo')}>Upload my work</button><button type="button" className={`filter-chip ${reviewMode === 'draw' ? 'active' : ''}`} onClick={() => setReviewMode('draw')}>Draw my work</button></div>
           <div className="upload-layout">
             <section>
