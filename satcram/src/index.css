@@ -260,6 +260,23 @@ button {
   text-decoration: underline;
 }
 
+.text-action { background: none; border: 0; color: var(--brand); cursor: pointer; font: inherit; font-size: 13px; font-weight: 600; padding: 4px 0; text-decoration: none; }
+.text-action:hover { text-decoration: underline; }
+.upload-details-reveal { margin-top: 12px; }
+.simple-upload-form { max-width: 920px; }
+.answer-choice-list { display: grid; gap: 10px; margin: 20px 0; }
+.answer-choice { background: var(--paper); border: 1px solid var(--line); border-radius: 10px; color: var(--ink); cursor: pointer; font: inherit; padding: 13px 15px; text-align: left; }
+.answer-choice:hover:not(:disabled), .answer-choice.selected { border-color: var(--brand); background: var(--brand-light); }
+.answer-choice:disabled { cursor: default; }
+.answer-choice.correct-choice { background: #e9f8ef; border-color: var(--correct); }
+.answer-choice.incorrect-choice { background: #fff0f0; border-color: var(--mistake); }
+.practice-feedback { background: var(--paper-dim); border-radius: 10px; font-size: 14px; margin: 16px 0; padding: 14px 16px; }
+.practice-feedback p { margin: 7px 0 0; }
+.visual-guide-intro { color: var(--muted); font-size: 14px; margin: 6px 0 16px; }
+.visual-guide-card { display: flex; flex-direction: column; gap: 10px; }
+.visual-guide-steps { align-items: center; color: var(--muted); display: flex; flex-wrap: wrap; font-size: 12px; gap: 6px; }
+.visual-guide-steps i { color: var(--brand); font-style: normal; }
+
 /* ---------- reusable "paper" panel ---------- */
 
 .panel {

@@ -1,6 +1,9 @@
+// This is a per-user, monthly ceiling. OpenAI's project budget should also be
+// set as a separate account-wide backstop in the OpenAI dashboard.
 const DEFAULT_MONTHLY_LIMIT_USD = 2
-const INPUT_COST_PER_MILLION = Number(process.env.OPENAI_INPUT_COST_PER_MILLION || 2.5)
-const OUTPUT_COST_PER_MILLION = Number(process.env.OPENAI_OUTPUT_COST_PER_MILLION || 15)
+// GPT-5.6 Luna list pricing: $0.20/M input and $1.20/M output.
+const INPUT_COST_PER_MILLION = Number(process.env.OPENAI_INPUT_COST_PER_MILLION || 0.2)
+const OUTPUT_COST_PER_MILLION = Number(process.env.OPENAI_OUTPUT_COST_PER_MILLION || 1.2)
 
 const usageByUser = new Map()
 

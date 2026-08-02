@@ -1,198 +1,47 @@
 import React, { useMemo, useState } from 'react'
 import { Link, useSearchParams } from '../../lib/router.jsx'
 import { useStore } from '../../App.jsx'
-import RichText from '../RichText.jsx'
+import { PRACTICE_BANK } from '../../data/practiceBank.js'
 import { SUBJECT_COLORS } from '../../data/domains.js'
 
-function QuestionCard({ mistake, onNext, onPrev, index, total, showAnswer, onToggleAnswer }) {
-  const preview =
-    mistake.questionText?.slice(0, 200) ||
-    (mistake.images?.length ? 'See attached screenshot' : 'No question text')
-
-  return (
-    <div className="practice-card panel">
-      <div className="practice-card-head">
-        <div className="practice-tags">
-          <span className={`subject-tag ${SUBJECT_COLORS[mistake.subject] || ''}`}>
-            {mistake.subject}
-          </span>
-          {mistake.domain && <span className="domain-tag">{mistake.domain}</span>}
-          <span className="topic-tag">{mistake.topic}</span>
-        </div>
-        <span className="practice-counter mono">
-          {index + 1} / {total}
-        </span>
-      </div>
-
-      <div className="practice-question">
-        {mistake.images?.length > 0 && (
-          <div className="practice-images">
-            {mistake.images.map((src, i) => (
-              <img key={i} src={src} alt={`Question ${i + 1}`} />
-            ))}
-          </div>
-        )}
-        {mistake.questionText ? (
-          <RichText text={mistake.questionText} />
-        ) : (
-          <p className="practice-no-text">Review the screenshot above and try again.</p>
-        )}
-      </div>
-
-      <div className="practice-attempt">
-        <div className="practice-field">
-          <span className="field-label">Your original answer</span>
-          <span className="field-value">{mistake.studentAnswer}</span>
-        </div>
-
-        {showAnswer ? (
-          <div className="practice-field practice-reveal">
-            <span className="field-label">Correct answer</span>
-            <span className="field-value correct">{mistake.correctAnswer}</span>
-            {mistake.reason && (
-              <div className="practice-reason">
-                <RichText text={mistake.reason} />
-              </div>
-            )}
-          </div>
-        ) : (
-          <button type="button" className="btn btn-ghost" onClick={onToggleAnswer}>
-            Reveal answer
-          </button>
-        )}
-      </div>
-
-      <div className="practice-nav">
-        <button type="button" className="btn btn-ghost" onClick={onPrev} disabled={index === 0}>
-          Previous
-        </button>
-        <Link
-          to={`/app/tutor?from=${mistake.id}`}
-          className="btn btn-ghost"
-        >
-          Work through with tutor
-        </Link>
-        <button type="button" className="btn" onClick={onNext} disabled={index >= total - 1}>
-          Next question
-        </button>
-      </div>
-    </div>
-  )
+function priorityDeck(mistakes, subject) {
+  const weakTopics = [...mistakes]
+    .filter((m) => m.correctness === 'Incorrect')
+    .reduce((counts, m) => ({ ...counts, [m.topic]: (counts[m.topic] || 0) + 1 }), {})
+  return PRACTICE_BANK
+    .filter((q) => !subject || q.subject === subject)
+    .sort((a, b) => (weakTopics[b.topic] || 0) - (weakTopics[a.topic] || 0))
 }
 
 export default function PracticeDeck() {
-  const { mistakes } = useStore()
+  const { mistakes, addPracticeAttempt } = useStore()
   const [searchParams] = useSearchParams()
-  const filterSubject = searchParams.get('subject')
-
-  const deck = useMemo(() => {
-    let list = [...mistakes]
-    if (filterSubject) list = list.filter((m) => m.subject === filterSubject)
-    return list
-  }, [mistakes, filterSubject])
-
+  const filterSubject = searchParams.get('subject') || ''
+  const deck = useMemo(() => priorityDeck(mistakes, filterSubject), [mistakes, filterSubject])
   const [index, setIndex] = useState(0)
-  const [showAnswer, setShowAnswer] = useState(false)
-
+  const [selected, setSelected] = useState(null)
+  const [submitted, setSubmitted] = useState(false)
   const current = deck[index]
 
-  function goNext() {
-    if (index < deck.length - 1) {
-      setIndex(index + 1)
-      setShowAnswer(false)
-    }
-  }
-
-  function goPrev() {
-    if (index > 0) {
-      setIndex(index - 1)
-      setShowAnswer(false)
-    }
-  }
-
-  const bySubject = useMemo(() => {
-    const counts = { Math: 0, Reading: 0, Writing: 0 }
-    for (const m of mistakes) {
-      if (counts[m.subject] !== undefined) counts[m.subject]++
-    }
-    return counts
-  }, [mistakes])
-
-  if (deck.length === 0) {
-    return (
-      <div>
-        <div className="eyebrow">practice</div>
-        <h2 className="page-title">Re-practice your questions</h2>
-        <div className="panel panel-pad empty-state">
-          <p>No questions saved yet. Upload a mistake to start building your practice deck.</p>
-          <Link to="/app/upload" className="btn" style={{ marginTop: 16 }}>
-            Upload a mistake
-          </Link>
-        </div>
-      </div>
-    )
-  }
+  function next() { setIndex((i) => Math.min(i + 1, deck.length - 1)); setSelected(null); setSubmitted(false) }
+  function submit() { if (!selected) return; addPracticeAttempt(current, selected); setSubmitted(true) }
+  const bySubject = ['Math', 'Reading', 'Writing'].map((subject) => ({ subject, count: PRACTICE_BANK.filter((q) => q.subject === subject).length }))
 
   return (
     <div className="practice-page">
-      <div className="practice-header">
-        <div>
-          <div className="eyebrow">practice deck</div>
-          <h2 className="page-title">Re-practice your questions</h2>
-          <p className="page-lede">
-            Work through every question you've submitted — {deck.length} total
-            {filterSubject ? ` in ${filterSubject}` : ''}.
-          </p>
-        </div>
-      </div>
-
+      <div className="practice-header"><div><div className="eyebrow">adaptive practice</div><h2 className="page-title">Questions chosen from your weak spots.</h2><p className="page-lede">Original SAT-style questions. Misses move matching skills to the front of your next session.</p></div></div>
       <div className="practice-filters">
-        <Link
-          to="/app/practice"
-          className={`filter-chip ${!filterSubject ? 'active' : ''}`}
-        >
-          All ({mistakes.length})
-        </Link>
-        {Object.entries(bySubject).map(([subj, count]) =>
-          count > 0 ? (
-            <Link
-              key={subj}
-              to={`/app/practice?subject=${subj}`}
-              className={`filter-chip ${filterSubject === subj ? 'active' : ''}`}
-            >
-              {subj} ({count})
-            </Link>
-          ) : null
-        )}
+        <Link to="/app/practice" className={`filter-chip ${!filterSubject ? 'active' : ''}`}>Recommended ({PRACTICE_BANK.length})</Link>
+        {bySubject.map(({ subject, count }) => <Link key={subject} to={`/app/practice?subject=${subject}`} className={`filter-chip ${filterSubject === subject ? 'active' : ''}`}>{subject} ({count})</Link>)}
       </div>
-
-      {current && (
-        <QuestionCard
-          mistake={current}
-          index={index}
-          total={deck.length}
-          showAnswer={showAnswer}
-          onToggleAnswer={() => setShowAnswer(true)}
-          onNext={goNext}
-          onPrev={goPrev}
-        />
-      )}
-
-      {index === deck.length - 1 && showAnswer && (
-        <div className="panel panel-pad practice-done">
-          <p>You've reached the end of your deck.</p>
-          <button
-            type="button"
-            className="btn btn-ghost"
-            onClick={() => {
-              setIndex(0)
-              setShowAnswer(false)
-            }}
-          >
-            Start over
-          </button>
-        </div>
-      )}
+      {current && <div className="practice-card panel">
+        <div className="practice-card-head"><div className="practice-tags"><span className={`subject-tag ${SUBJECT_COLORS[current.subject] || ''}`}>{current.subject}</span><span className="topic-tag">{current.topic}</span><span className="domain-tag">{current.difficulty}</span></div><span className="practice-counter mono">{index + 1} / {deck.length}</span></div>
+        <div className="practice-question"><p>{current.prompt}</p></div>
+        <div className="answer-choice-list">{current.choices.map((choice) => <button type="button" key={choice} disabled={submitted} onClick={() => setSelected(choice)} className={`answer-choice ${selected === choice ? 'selected' : ''} ${submitted && choice === current.answer ? 'correct-choice' : ''} ${submitted && selected === choice && choice !== current.answer ? 'incorrect-choice' : ''}`}>{choice}</button>)}</div>
+        {submitted && <div className="practice-feedback"><strong>{selected === current.answer ? 'Correct — nice work.' : `Not quite. The correct answer is ${current.answer}.`}</strong><p>{current.explanation}</p></div>}
+        <div className="practice-nav">{submitted ? <button type="button" className="btn" onClick={next} disabled={index === deck.length - 1}>Next question</button> : <button type="button" className="btn" disabled={!selected} onClick={submit}>Check answer</button>}<Link to="/app/tutor" className="btn btn-ghost">Ask the tutor</Link></div>
+      </div>}
+      {submitted && index === deck.length - 1 && <div className="panel panel-pad practice-done">You’ve completed this set. Your results are now part of your study plan.</div>}
     </div>
   )
 }

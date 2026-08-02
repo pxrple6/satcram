@@ -67,6 +67,12 @@ export default function DiagnosticReport({ report }) {
             <dd style={{ margin: 0, fontSize: 14, fontStyle: 'italic' }}>{report.pattern}</dd>
           </>
         )}
+        {report.answerChoices?.length > 0 && (
+          <>
+            <dt style={{ color: 'var(--muted)', fontSize: 13 }}>Choices found</dt>
+            <dd style={{ margin: 0, fontSize: 14 }}>{report.answerChoices.join(' · ')}</dd>
+          </>
+        )}
       </dl>
 
       {report.images?.length > 0 && (

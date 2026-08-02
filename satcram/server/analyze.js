@@ -7,6 +7,8 @@ a JSON object (no prose, no markdown fences) with this exact shape:
   "domain": string,
   "topic": string,
   "questionType": string,
+  "extractedQuestion": string,
+  "answerChoices": string[],
   "correctness": "Correct" | "Incorrect",
   "reason": string,
   "confidence": "High" | "Medium" | "Low",
@@ -16,12 +18,15 @@ a JSON object (no prose, no markdown fences) with this exact shape:
 
 SAT categorization rules:
 - subject: "Math" for any math question; "Reading" for passage comprehension; "Writing" for grammar/rhetoric/editing
+- only categorize SAT Math, Reading, and Writing. If the upload is another subject, set subject to "Reading", topic to "Unsupported question", and explain that SATcram currently supports SAT Math and Reading & Writing only.
 - domain: use official College Board domain names:
   Math → "Heart of Algebra" | "Passport to Advanced Math" | "Problem Solving & Data Analysis" | "Additional Topics"
   Reading → "Information & Ideas" | "Craft & Structure"
   Writing → "Standard English Conventions" | "Expression of Ideas"
 - topic: pick the most specific skill, e.g. "Linear Equations", "Inference", "Punctuation", "Quadratics", "Transitions"
 - questionType: a short label like "Two-variable linear equation" or "Comma splice identification"
+- extractedQuestion: a clean transcription of the question when it is visible, otherwise an empty string
+- answerChoices: every visible answer choice in order, otherwise an empty array
 
 If images are attached, read the question directly from them — do not assume the
 provided question text is complete on its own. Use the subject/topic hints when provided,
@@ -60,13 +65,14 @@ export async function analyzeWithOpenAI(input, apiKey) {
       'Content-Type': 'application/json',
     },
     body: JSON.stringify({
-      model: 'gpt-5.6-terra',
+      model: process.env.OPENAI_MODEL || 'gpt-5.6-luna',
       response_format: { type: 'json_object' },
       messages: [
         { role: 'system', content: SYSTEM_PROMPT },
         { role: 'user', content: userContent },
       ],
-      reasoning_effort: 'low',
+      reasoning_effort: 'none',
+      max_completion_tokens: 500,
     }),
   })
 
@@ -83,6 +89,8 @@ export async function analyzeWithOpenAI(input, apiKey) {
     domain: parsed.domain || null,
     topic: parsed.topic,
     questionType: parsed.questionType || parsed.topic,
+    extractedQuestion: parsed.extractedQuestion || '',
+    answerChoices: Array.isArray(parsed.answerChoices) ? parsed.answerChoices : [],
     correctness: parsed.correctness,
     reason: parsed.reason,
     confidence: parsed.confidence,

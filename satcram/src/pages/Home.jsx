@@ -5,16 +5,16 @@ import { upcomingSatDates, formatCountdown } from '../data/satDates.js'
 
 const STEPS = [
   {
-    title: 'Upload a mistake',
-    body: 'Screenshot a question from Bluebook or paste the text. Add your answer and the correct one.',
+    title: 'Set your test date',
+    body: 'Choose your SAT date once so your daily practice and review have a realistic pace.',
   },
   {
-    title: 'Get a diagnosis',
-    body: 'AI identifies the reasoning error, confidence level, and recurring pattern behind the miss.',
+    title: 'Practice or log a miss',
+    body: 'Start with original SAT-style questions, or paste a question/screenshot and let AI label the skill.',
   },
   {
-    title: 'Study what matters',
-    body: 'Your dashboard, study plan, and tutor all build from your actual mistake history.',
+    title: 'See exactly what to fix',
+    body: 'Your dashboard, visual study guides, practice, and tutor adapt to the patterns in your work.',
   },
 ]
 
@@ -23,7 +23,7 @@ const FEATURES = [
   { title: 'Score prediction', body: 'Estimated SAT score that updates as your accuracy improves.' },
   { title: 'Study plan', body: 'Daily focus areas paced to your SAT date and weak spots.' },
   { title: 'AI tutor', body: 'Walk through any question — hints first, full explanation when you need it.' },
-  { title: 'Practice deck', body: 'Re-visit every question you have uploaded.' },
+  { title: 'Adaptive practice', body: 'Original SAT-style questions move weak skills to the front of your next set.' },
   { title: 'Mistake journal', body: 'Searchable history of every analyzed question.' },
 ]
 
@@ -36,18 +36,18 @@ export default function Home() {
         <SiteHeader />
         <div className="hero-inner">
           <div className="hero-copy">
-            <p className="hero-label">SAT prep from your mistakes</p>
-            <h1>Turn wrong answers into a study plan that actually fits you.</h1>
+            <p className="hero-label">SAT prep that adapts to you</p>
+            <h1>Practice, find your patterns, and know what to study next.</h1>
             <p className="hero-lede">
-              Upload questions you missed. SATcram diagnoses the reasoning error, tracks patterns over time,
-              and builds your practice deck and study plan from real data — not a generic question bank.
+              Set your test date, start practising, and log any missed question with a screenshot or paste.
+              SATcram turns your results into targeted practice, visual study guides, and a daily plan.
             </p>
             <div className="hero-actions">
               <Link to="/signup" className="btn">
-                Get started free
+                Build my SAT plan
               </Link>
               <Link to="/app/upload" className="btn btn-ghost">
-                Try without signing up
+                Try a practice set
               </Link>
             </div>
           </div>

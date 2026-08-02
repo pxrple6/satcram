@@ -1,7 +1,9 @@
 import React, { useCallback, useEffect, useRef, useState } from 'react'
 
-const MAX_IMAGES = 4
-const MAX_FILE_BYTES = 8 * 1024 * 1024
+// One compressed screenshot is enough for a single SAT question and keeps
+// vision requests predictable for the student's AI-credit allowance.
+const MAX_IMAGES = 1
+const MAX_FILE_BYTES = 2 * 1024 * 1024
 
 function formatBytes(bytes) {
   if (bytes < 1024) return `${bytes} B`
@@ -48,7 +50,7 @@ export default function ImageDropzone({ images, onChange, maxImages = MAX_IMAGES
       const toAdd = files.slice(0, room)
       const oversized = toAdd.find((f) => f.size > MAX_FILE_BYTES)
       if (oversized) {
-        setError(`"${oversized.name}" is over 8 MB — try a smaller screenshot.`)
+        setError(`"${oversized.name}" is over 2 MB — try a smaller screenshot.`)
       }
 
       const accepted = toAdd.filter((f) => f.size <= MAX_FILE_BYTES)
@@ -156,7 +158,7 @@ export default function ImageDropzone({ images, onChange, maxImages = MAX_IMAGES
           <div className="dz-main">
             {loading ? 'Reading image…' : atLimit ? `${maxImages} images attached` : 'Drop a screenshot, click to browse, or paste (⌘V)'}
           </div>
-          <div className="dz-sub">PNG, JPG, or WebP · up to {maxImages} images · 8 MB each</div>
+          <div className="dz-sub">PNG, JPG, or WebP · one screenshot · 2 MB maximum</div>
         </div>
 
         <input

@@ -44,6 +44,30 @@ export function useMistakeStore(userId = 'guest') {
     return record
   }
 
+  function addPracticeAttempt(question, studentAnswer) {
+    const correct = studentAnswer === question.answer
+    const record = {
+      id: `p_${Date.now()}_${Math.round(Math.random() * 1e4)}`,
+      timestamp: Date.now(),
+      source: 'SATcram practice bank',
+      questionText: question.prompt,
+      studentAnswer,
+      correctAnswer: question.answer,
+      images: [],
+      subject: question.subject,
+      topic: question.topic,
+      questionType: `${question.difficulty} practice`,
+      correctness: correct ? 'Correct' : 'Incorrect',
+      reason: question.explanation,
+      confidence: 'High',
+      estimatedSkill: correct ? 82 : 45,
+      pattern: correct ? null : `Needs more practice with ${question.topic}`,
+      status: correct ? 'Fixed' : 'Needs review',
+    }
+    setMistakes((prev) => [record, ...prev])
+    return record
+  }
+
   function setStatus(id, status) {
     setMistakes((prev) => prev.map((m) => (m.id === id ? { ...m, status } : m)))
   }
@@ -92,5 +116,5 @@ export function useMistakeStore(userId = 'guest') {
     }
   }, [mistakes])
 
-  return { mistakes, addMistake, setStatus, clearAll, mastery, stats }
+  return { mistakes, addMistake, addPracticeAttempt, setStatus, clearAll, mastery, stats }
 }

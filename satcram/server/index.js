@@ -108,8 +108,11 @@ function enforceUsageBudget(req, res, next) {
 // Input validation helpers
 function validateAnalyzeInput(body) {
   if (!body || typeof body !== 'object') throw new Error('Invalid payload')
-  if (body.images && (!Array.isArray(body.images) || body.images.length > 4)) {
-    throw new Error('Maximum of 4 images allowed per request.')
+  if (body.images && (!Array.isArray(body.images) || body.images.length > 1)) {
+    throw new Error('Maximum of 1 image allowed per request.')
+  }
+  if (body.images?.some((image) => typeof image !== 'string' || image.length > 2_800_000)) {
+    throw new Error('Screenshot exceeds the 2 MB limit.')
   }
   if (body.questionText && typeof body.questionText === 'string' && body.questionText.length > 10000) {
     throw new Error('Question text exceeds maximum allowed length.')
@@ -123,6 +126,11 @@ function validateTutorInput(body) {
   if (body.messages.length > 50) {
     throw new Error('Conversation history exceeds limit (50 messages).')
   }
+  if (body.messages.some((message) => typeof message?.content !== 'string' || message.content.length > 10000)) {
+    throw new Error('A tutor message exceeds the maximum length.')
+  }
+  const imageCount = body.messages.reduce((count, message) => count + (Array.isArray(message.images) ? message.images.length : 0), 0)
+  if (imageCount > 1) throw new Error('Maximum of 1 screenshot allowed per tutor session.')
 }
 
 app.post('/api/analyze', clerkAuthMiddleware, enforceUsageBudget, async (req, res) => {

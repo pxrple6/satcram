@@ -31,13 +31,13 @@ export default function Dashboard() {
 
   const greeting = isSignedIn && user?.firstName ? `Hi, ${user.firstName}` : 'Dashboard'
 
-  if (!hasData) {
+  if (!profile.satTestDate) {
     return (
       <div className="dashboard">
         <header className="dashboard-header">
           <div>
-            <h2 className="page-title">{greeting}</h2>
-            <p className="page-lede">Upload your first mistake to start tracking progress.</p>
+            <h2 className="page-title">{greeting}, when are you taking the SAT?</h2>
+            <p className="page-lede">Choose your date once. We’ll pace practice and review around it.</p>
           </div>
         </header>
 
@@ -62,15 +62,13 @@ export default function Dashboard() {
           </div>
         </div>
 
-        <div className="empty-state panel panel-pad">
-          <h3>No mistakes saved yet</h3>
-          <p>Screenshot a question from Bluebook or Khan Academy — we'll diagnose the reasoning error and save it to your journal.</p>
-          <Link to="/app/upload" className="btn">
-            Upload a mistake
-          </Link>
-        </div>
+        <div className="empty-state panel panel-pad"><h3>Then start with a short adaptive set</h3><p>You do not need to upload anything first. Answer original SAT-style questions and we’ll use your results to personalize the next session.</p><Link to="/app/practice" className="btn">Start practice</Link></div>
       </div>
     )
+  }
+
+  if (!hasData) {
+    return <div className="dashboard"><header className="dashboard-header"><div><h2 className="page-title">Your plan starts today.</h2><p className="page-lede">Start practising, or log a question you missed elsewhere. Either creates your personalized plan.</p></div></header><div className="dashboard-actions"><Link to="/app/practice" className="btn">Start adaptive practice</Link><Link to="/app/upload" className="btn btn-ghost">Log a missed question</Link></div></div>
   }
 
   return (
@@ -180,7 +178,7 @@ export default function Dashboard() {
 
       <div className="dashboard-actions">
         <Link to="/app/practice" className="btn btn-ghost">
-          Practice saved questions
+          Practice your weak topics
         </Link>
         <Link to="/app/plan" className="btn btn-ghost">
           View study plan

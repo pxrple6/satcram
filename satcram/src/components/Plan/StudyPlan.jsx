@@ -116,15 +116,18 @@ export default function StudyPlan() {
 
       {plan.weakestTopics.length > 0 && profile.satTestDate && (
         <div className="panel panel-pad plan-breakdown">
-          <div className="eyebrow">weak spots to close before test day</div>
+          <div className="eyebrow">visual study guides — your weak spots</div>
+          <p className="visual-guide-intro">Each guide gives you the idea to see, the move to make, and fresh practice to lock it in.</p>
           <div className="weakness-grid">
             {plan.weakestTopics.map((t) => (
-              <div key={t.topic} className="weakness-item">
+              <div key={t.topic} className="weakness-item visual-guide-card">
                 <div className="weakness-topic">{t.topic}</div>
                 <div className="weakness-meta">
                   <span className="domain-tag">{t.domain}</span>
                   <span className="mark-review">{t.mastery}%</span>
                 </div>
+                <div className="visual-guide-steps"><span>See the pattern</span><i>→</i><span>Try one move</span><i>→</i><span>Practise it</span></div>
+                <Link to={`/app/practice?subject=${t.subject}`} className="text-action">Open targeted practice</Link>
               </div>
             ))}
           </div>

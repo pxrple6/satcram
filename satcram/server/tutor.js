@@ -48,7 +48,7 @@ export async function tutorWithOpenAI({ messages }, apiKey) {
           { type: 'text', text: m.content || '(See attached screenshot for the question.)' },
           ...m.images.map((url) => ({
             type: 'image_url',
-            image_url: { url, detail: 'high' },
+            image_url: { url, detail: 'low' },
           })),
         ],
       })
@@ -64,9 +64,9 @@ export async function tutorWithOpenAI({ messages }, apiKey) {
       'Content-Type': 'application/json',
     },
     body: JSON.stringify({
-      model: 'gpt-5.6-terra',
+      model: process.env.OPENAI_MODEL || 'gpt-5.6-luna',
       messages: apiMessages,
-      reasoning_effort: 'low',
+      reasoning_effort: 'none',
       max_completion_tokens: 600,
     }),
   })
