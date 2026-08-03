@@ -92,13 +92,15 @@ export default function SocraticTutor() {
     if (handoff?.prompt && !startedPracticeRef.current) {
       startedPracticeRef.current = true
       const choices = handoff.choices?.map((choice, index) => `${String.fromCharCode(65 + index)}. ${choice}`).join('\n') || ''
-      const first = handoff.attempted
-        ? { role: 'user', content: `MISSED PRACTICE HANDOFF\nSubject: ${handoff.subject || 'SAT'}\nTopic: ${handoff.topic || 'SAT skill'}\nQuestion:\n${handoff.prompt}\nChoices:\n${choices}\nStudent chose: ${handoff.studentAnswer || 'No answer'}\nCorrect answer: ${handoff.correctAnswer || 'Unknown'}\nTeach this exact ${handoff.incorrect ? 'incorrect' : 'completed'} attempt with a visual concept and a close retry.` }
+      const first = handoff.attempted && handoff.incorrect
+        ? { role: 'user', content: `MISSED PRACTICE HANDOFF\nSubject: ${handoff.subject || 'SAT'}\nTopic: ${handoff.topic || 'SAT skill'}\nQuestion:\n${handoff.prompt}\nChoices:\n${choices}\nStudent chose: ${handoff.studentAnswer || 'No answer'}\nThis is recorded failed Attempt 1 of 3. Keep the solution locked and make the student reason through the original question again.` }
+        : handoff.attempted
+          ? { role: 'user', content: `${handoff.prompt}${choices ? `\n\nChoices:\n${choices}` : ''}\n\nMy answer is ${handoff.studentAnswer}. My reasoning was:` }
         : { role: 'user', content: `${handoff.prompt}${choices ? `\n\nChoices:\n${choices}` : ''}` }
       setQuestionText(handoff.prompt)
       setStarted(true)
       setMessages([first])
-      callTutor([first], { visualLesson: Boolean(handoff.attempted) })
+      callTutor([first])
       return
     }
     const practiceQuestion = PRACTICE_BANK.find((question) => question.id === practiceId)
@@ -264,21 +266,15 @@ export default function SocraticTutor() {
         </div>
 
         <div className="tutor-chat-input">
+          <p className="tutor-gate-note"><strong>Solution locked:</strong> make three genuine attempts. Asking for the answer or a hint does not count.</p>
           {awaitingAnswer && (
-            <p className="tutor-prompt">The tutor is waiting for your answer.</p>
+            <p className="tutor-prompt">The tutor is waiting for your answer and first reasoning step.</p>
           )}
 
           {canReply && (
             <div className="tutor-quick-actions">
               <button type="button" className="btn btn-ghost btn-sm" onClick={() => handleSend('I need a hint')}>
                 I need a hint
-              </button>
-              <button
-                type="button"
-                className="btn btn-ghost btn-sm"
-                onClick={() => handleSend('Explain the whole question to me')}
-              >
-                Explain it fully
               </button>
             </div>
           )}
@@ -291,8 +287,8 @@ export default function SocraticTutor() {
               type="text"
               placeholder={
                 awaitingAnswer
-                  ? 'Type your answer (e.g. B, 42, "the author disagrees")…'
-                  : 'Your answer, or ask for a hint…'
+                  ? 'Give your answer and show your first step…'
+                  : 'Try again: answer plus reasoning…'
               }
               value={input}
               onChange={(e) => setInput(e.target.value)}

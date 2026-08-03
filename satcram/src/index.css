@@ -1463,6 +1463,17 @@ select:focus {
   margin: 0 0 10px;
 }
 
+.tutor-gate-note {
+  color: var(--muted);
+  font-size: 12px;
+  line-height: 1.45;
+  margin: 0 0 10px;
+}
+
+.tutor-gate-note strong {
+  color: var(--ink);
+}
+
 .tutor-quick-actions {
   display: flex;
   gap: 8px;

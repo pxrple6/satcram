@@ -1,95 +1,54 @@
-// Offline stand-in when OpenAI is unavailable.
+// Offline stand-in when OpenAI is unavailable. It preserves the same
+// three-attempt gate and never exposes the recorded answer from a handoff.
 
-function countHints(messages) {
-  return messages.filter((m) => m.role === 'assistant' && m.content.toLowerCase().includes('hint')).length
+function isHelpRequest(text) {
+  const value = text.toLowerCase()
+  return ['hint', 'help me', 'stuck', 'not sure', 'explain', 'give up', 'just tell', 'full solution', "don't know", 'no idea']
+    .some((phrase) => value.includes(phrase))
 }
 
-function wantsExplanation(text) {
-  const t = text.toLowerCase()
-  return (
-    t.includes('explain') ||
-    t.includes('give up') ||
-    t.includes('just tell') ||
-    t.includes('full solution') ||
-    t.includes("don't know") ||
-    t.includes('no idea')
-  )
-}
-
-function wantsHint(text) {
-  const t = text.toLowerCase()
-  return t.includes('hint') || t.includes('help me') || t.includes('stuck') || t.includes('not sure')
+function isGenuineAttempt(text) {
+  const value = text.trim()
+  return value.length > 0 && !isHelpRequest(value)
 }
 
 /**
  * @param {{ messages: Array<{ role: string, content: string, images?: string[] }> }} input
  */
 export function mockTutorReply({ messages }) {
-  const userMsgs = messages.filter((m) => m.role === 'user')
-  const assistantMsgs = messages.filter((m) => m.role === 'assistant')
+  const userMessages = messages.filter((message) => message.role === 'user')
+  const assistantMessages = messages.filter((message) => message.role === 'assistant')
+  const firstMessage = userMessages[0]?.content || ''
+  const missedHandoff = firstMessage.startsWith('MISSED PRACTICE HANDOFF')
+  const recordedChoice = firstMessage.match(/Student chose: (.+)/)?.[1] || 'that choice'
+  const laterAttempts = userMessages.slice(1).filter((message) => isGenuineAttempt(message.content)).length
+  const failedAttempts = (missedHandoff ? 1 : 0) + laterAttempts
 
-  const firstMessage = userMsgs[0]?.content || ''
-  if (firstMessage.startsWith('MISSED PRACTICE HANDOFF')) {
-    const subject = firstMessage.match(/Subject: (.+)/)?.[1] || 'SAT'
-    const topic = firstMessage.match(/Topic: (.+)/)?.[1] || 'the skill'
-    const chosen = firstMessage.match(/Student chose: (.+)/)?.[1] || 'your selected answer'
-    const correct = firstMessage.match(/Correct answer: (.+)/)?.[1] || 'the correct answer'
-    const math = subject === 'Math'
+  if (assistantMessages.length === 0) {
+    if (missedHandoff) {
+      return {
+        message: `**Attempt 1 of 3 recorded.** You chose ${recordedChoice}. I’m not going to show the answer yet. What relationship, rule, or passage evidence did you use—and what would you change on your second attempt?`,
+      }
+    }
     return {
-      message: `**Your answer:** ${chosen}\n\n**Correct answer:** ${correct}\n\nThe tutor service is unavailable, so this local guide cannot verify every calculation. Start by comparing the relationship the question asks for with the relationship used in your selected answer. For ${topic}, that comparison is the first thing to repair.`,
-      steps: [
-        { color: 'green', label: 'What the question gives', detail: 'Underline the quantities, evidence, or sentence parts that are explicitly stated.' },
-        { color: 'amber', label: 'What to check', detail: 'Name the relationship the question is testing before evaluating answer choices.' },
-        { color: 'red', label: 'The mismatch', detail: `Your choice (${chosen}) does not match the recorded correct answer (${correct}). Recheck the decisive relationship, not just the final number or wording.` },
-        { color: 'blue', label: 'Repair', detail: 'Work one concrete value, line of evidence, or sentence boundary through before choosing again.' },
-      ],
-      concept: { title: `${topic}: rebuild the relationship`, visualType: math ? 'input-output' : subject === 'Reading' ? 'evidence-ladder' : 'sentence-map', takeaway: math ? 'Input → rule → output: the correct answer must preserve the rule at every step.' : 'Move from the exact evidence or sentence structure to the answer; do not choose what merely sounds plausible.' },
-      retryPrompt: `Before selecting an answer, state the one ${topic} relationship this question is testing in your own words.`,
+      message: 'Before I help, give me both your answer and your first reasoning step. Your best honest attempt is enough to begin.',
     }
   }
 
-  // First turn: student just submitted the question
-  if (userMsgs.length === 1 && assistantMsgs.length === 0) {
+  const lastUser = userMessages[userMessages.length - 1]?.content || ''
+  if (isHelpRequest(lastUser)) {
     return {
-      message:
-        "I've got the question. Before I help you work through it — what answer would you pick? Take your best guess.",
+      message: `The solution is still locked. Asking for a hint or the answer does not count as an attempt. You have made **${Math.min(failedAttempts, 3)} of 3** required attempts—show me the next step you would try.`,
     }
   }
 
-  const lastUser = userMsgs[userMsgs.length - 1]?.content || ''
-  const hintsGiven = countHints(messages)
-
-  if (wantsExplanation(lastUser) || hintsGiven >= 2) {
+  if (failedAttempts < 3) {
     return {
-      message:
-        "Here's the full walkthrough: break the problem into what it's asking vs. what it's giving you. " +
-        "Identify the key relationship or passage evidence first, then work step by step toward the answer. " +
-        "The correct approach usually comes from re-reading the specific line the question references — not from general knowledge. " +
-        "(Connect your OpenAI API key for a real step-by-step explanation tailored to your question.)",
-    }
-  }
-
-  if (wantsHint(lastUser) && hintsGiven >= 1) {
-    return {
-      message:
-        "Second hint: cross out answer choices that contradict the passage or don't match the units in the problem. " +
-        "What's left is usually down to one conceptual fork — focus on whether the question wants addition or comparison. " +
-        "Still stuck? Say 'explain it' and I'll walk you through the whole thing.",
-    }
-  }
-
-  if (assistantMsgs.length === 1) {
-    return {
-      message:
-        `You said "${lastUser}" — not quite, but you're thinking in the right direction. ` +
-        "Hint: re-read what the question is actually asking you to find, not just what looks familiar. " +
-        "Want to try again, or should I give you another hint?",
+      message: `**Attempt ${failedAttempts} of 3.** I won’t give away the solution yet. Check what the question asks you to find, then write one concrete calculation, rule, or piece of evidence for your next attempt.`,
     }
   }
 
   return {
-    message:
-      "Hint: look for signal words (however, therefore, except) or the specific values the problem gives you. " +
-      "Try working one step at a time. Say 'explain it' if you'd like the full solution.",
+    message: '**Three genuine attempts completed—the solution is unlocked.** The offline tutor cannot safely calculate the exact answer for this question. Reconnect the AI tutor and send this attempt again for the full worked solution.',
   }
 }
