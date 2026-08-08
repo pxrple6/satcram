@@ -136,7 +136,10 @@ function validateTutorInput(body) {
     throw new Error('A tutor message exceeds the maximum length.')
   }
   const imageCount = body.messages.reduce((count, message) => count + (Array.isArray(message.images) ? message.images.length : 0), 0)
-  if (imageCount > 1) throw new Error('Maximum of 1 screenshot allowed per tutor session.')
+  if (imageCount > 2) throw new Error('Maximum of 2 screenshots allowed per tutor session: your work and the original question.')
+  if (body.messages.some((message) => Array.isArray(message.images) && message.images.some((image) => typeof image !== 'string' || image.length > 2_800_000))) {
+    throw new Error('A screenshot exceeds the 2 MB limit.')
+  }
 }
 
 app.post('/api/analyze', clerkAuthMiddleware, enforceUsageBudget, async (req, res) => {
