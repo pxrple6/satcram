@@ -12,17 +12,34 @@ export function saveTutorHandoff(id, payload) {
   return key
 }
 
-export function takeTutorHandoff(id) {
+/** Read a handoff without deleting it (safe for React Strict Mode double-mount). */
+export function getTutorHandoff(id) {
   if (!id) return null
   const key = String(id)
   let payload = inMemoryHandoffs.get(key) || null
-  inMemoryHandoffs.delete(key)
-  try {
-    const storageKey = `${HANDOFF_PREFIX}${key}`
-    if (!payload) payload = JSON.parse(sessionStorage.getItem(storageKey) || 'null')
-    sessionStorage.removeItem(storageKey)
-  } catch {
-    // Use the in-memory payload when browser storage is unavailable.
+  if (!payload) {
+    try {
+      payload = JSON.parse(sessionStorage.getItem(`${HANDOFF_PREFIX}${key}`) || 'null')
+      if (payload) inMemoryHandoffs.set(key, payload)
+    } catch {
+      payload = null
+    }
   }
   return payload
+}
+
+/** @deprecated Prefer getTutorHandoff — destructive reads break under React Strict Mode. */
+export function takeTutorHandoff(id) {
+  return getTutorHandoff(id)
+}
+
+export function clearTutorHandoff(id) {
+  if (!id) return
+  const key = String(id)
+  inMemoryHandoffs.delete(key)
+  try {
+    sessionStorage.removeItem(`${HANDOFF_PREFIX}${key}`)
+  } catch {
+    // ignore storage errors
+  }
 }

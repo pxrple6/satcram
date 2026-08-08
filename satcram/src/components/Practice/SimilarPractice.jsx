@@ -2,7 +2,9 @@ import React, { useEffect, useState } from 'react'
 import { Link, useSearchParams } from '../../lib/router.jsx'
 import { useStore } from '../../App.jsx'
 import { generatePracticeSet, recentPracticeStyles } from '../../lib/practiceClient.js'
-import { takeTutorHandoff } from '../../lib/tutorHandoff.js'
+import { clearTutorHandoff, getTutorHandoff } from '../../lib/tutorHandoff.js'
+
+const startedHandoffs = new Set()
 import RichText from '../RichText.jsx'
 import { SUBJECT_COLORS } from '../../data/domains.js'
 
@@ -17,7 +19,11 @@ export default function SimilarPractice() {
   const [error, setError] = useState('')
 
   useEffect(() => {
-    const source = takeTutorHandoff(params.get('handoff'))
+    const handoffId = params.get('handoff')
+    if (!handoffId || startedHandoffs.has(handoffId)) return
+    startedHandoffs.add(handoffId)
+
+    const source = getTutorHandoff(handoffId)
     if (!source?.sourceQuestion && !source?.sourceImage) {
       setError('We could not find the submitted question. Return to the tutor and choose “Practice similar questions” again.')
       setLoading(false)
@@ -31,7 +37,17 @@ export default function SimilarPractice() {
       sourceImage: source.sourceImage || '',
       similarToSubmitted: true,
       recentStyleTags: recentPracticeStyles(),
-    }).then((freshQuestions) => setQuestions(freshQuestions)).catch((err) => setError(err.message || 'Could not create a similar practice set.')).finally(() => setLoading(false))
+    })
+      .then((freshQuestions) => {
+        setQuestions(freshQuestions)
+        clearTutorHandoff(handoffId)
+        startedHandoffs.delete(handoffId)
+      })
+      .catch((err) => {
+        startedHandoffs.delete(handoffId)
+        setError(err.message || 'Could not create a similar practice set.')
+      })
+      .finally(() => setLoading(false))
   }, [params])
 
   const current = questions[index]

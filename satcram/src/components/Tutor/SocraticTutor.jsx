@@ -6,7 +6,7 @@ import { useSearchParams } from '../../lib/router.jsx'
 import { PRACTICE_BANK } from '../../data/practiceBank.js'
 import WorkPad from './WorkPad.jsx'
 import AnnotatedWork from './AnnotatedWork.jsx'
-import { saveTutorHandoff, takeTutorHandoff } from '../../lib/tutorHandoff.js'
+import { getTutorHandoff, saveTutorHandoff } from '../../lib/tutorHandoff.js'
 
 function ChatBubble({ role, text }) {
   const isTutor = role === 'assistant'
@@ -105,7 +105,7 @@ export default function SocraticTutor() {
 
   useEffect(() => {
     const practiceId = searchParams.get('practice')
-    const handoff = takeTutorHandoff(searchParams.get('handoff'))
+    const handoff = getTutorHandoff(searchParams.get('handoff'))
     if (handoff?.prompt && !startedPracticeRef.current) {
       startedPracticeRef.current = true
       const choices = handoff.choices?.map((choice, index) => `${String.fromCharCode(65 + index)}. ${choice}`).join('\n') || ''
@@ -172,9 +172,15 @@ export default function SocraticTutor() {
   }
 
   function openSimilarPractice() {
+    const sourceQuestion = similarSource.sourceQuestion || questionText.trim()
+    const sourceImage = similarSource.sourceImage || contextImages[0]?.dataUrl || (reviewMode === 'question' ? images[0]?.dataUrl : '') || ''
+    if (!sourceQuestion && !sourceImage) {
+      setError('Add the original question text or screenshot before practicing similar questions.')
+      return
+    }
     const id = saveTutorHandoff(`similar-${Date.now()}`, {
-      sourceQuestion: similarSource.sourceQuestion || questionText.trim(),
-      sourceImage: similarSource.sourceImage,
+      sourceQuestion,
+      sourceImage,
       subject: similarSource.subject || questionFocus.subject || 'Math',
       topic: similarSource.topic || questionFocus.topic || 'Submitted-question concept',
     })
