@@ -39,6 +39,7 @@ export default function SocraticTutor() {
   const [searchParams] = useSearchParams()
   const [questionText, setQuestionText] = useState('')
   const [images, setImages] = useState([])
+  const [contextImages, setContextImages] = useState([])
   const [reviewMode, setReviewMode] = useState('question')
   const [drawnWork, setDrawnWork] = useState('')
   const [messages, setMessages] = useState([])
@@ -55,8 +56,9 @@ export default function SocraticTutor() {
   const inputRef = useRef(null)
   const startedPracticeRef = useRef(false)
 
-  const activeImages = reviewMode === 'draw' && drawnWork ? [{ id: 'drawn-work', dataUrl: drawnWork }] : images
-  const hasQuestion = questionText.trim() || activeImages.length > 0
+  const workImages = reviewMode === 'draw' && drawnWork ? [{ id: 'drawn-work', dataUrl: drawnWork }] : images
+  const activeImages = reviewMode === 'question' ? workImages : [...workImages, ...contextImages]
+  const hasQuestion = reviewMode === 'question' ? questionText.trim() || workImages.length > 0 : workImages.length > 0
   const hasAskedForAnswer = messages.some((m) => m.role === 'assistant')
   const studentReplies = messages.filter((m, i) => m.role === 'user' && i > 0).length
   const awaitingAnswer = started && hasAskedForAnswer && studentReplies === 0
@@ -150,6 +152,7 @@ export default function SocraticTutor() {
     setMessages([])
     setQuestionText('')
     setImages([])
+    setContextImages([])
     setDrawnWork('')
     setReviewMode('question')
     setInput('')
@@ -176,25 +179,31 @@ export default function SocraticTutor() {
             <section>
               <div className="upload-section-label">
                 <span>{reviewMode === 'question' ? 'Question screenshot' : reviewMode === 'photo' ? 'Photo of your work' : 'Your handwritten work'}</span>
-                <span className="upload-optional">optional</span>
+                <span className="upload-optional">{reviewMode === 'question' ? 'optional' : 'required'}</span>
               </div>
               {reviewMode === 'draw' ? <WorkPad value={drawnWork} onChange={setDrawnWork} /> : <ImageDropzone images={images} onChange={setImages} maxImages={1} />}
             </section>
 
             <section>
               <label className="field">
-                {reviewMode === 'question' ? 'Question text' : 'Original question or goal'} {activeImages.length > 0 ? '(optional)' : ''}
+                {reviewMode === 'question' ? 'Question text' : 'Original SAT question'} {activeImages.length > 0 ? '(optional)' : ''}
                 <textarea
                   rows={5}
                   placeholder={
                     images.length > 0
                     ? 'Add the original question or context…'
-                    : reviewMode === 'question' ? 'Paste or type the full question…' : 'Paste the question you were solving…'
+                    : reviewMode === 'question' ? 'Paste or type the full question…' : 'Paste the full problem, answer choices, and any diagram details…'
                   }
                   value={questionText}
                   onChange={(e) => setQuestionText(e.target.value)}
                 />
               </label>
+
+              {reviewMode !== 'question' && <section className="tutor-question-context">
+                <div className="upload-section-label"><span>Original question screenshot</span><span className="upload-optional">optional context</span></div>
+                <p>Attach the printed question separately from your work so the tutor can compare your steps to the problem.</p>
+                <ImageDropzone images={contextImages} onChange={setContextImages} maxImages={1} />
+              </section>}
 
               {error && <div className="upload-error">{error}</div>}
 
@@ -241,7 +250,9 @@ export default function SocraticTutor() {
 
       {activeImages.length > 0 && (
         <><div className="tutor-question-images">
-          {reviewMode === 'question' ? activeImages.map((img) => <img key={img.id} src={img.dataUrl} alt="Question screenshot" />) : <AnnotatedWork image={activeImages[0]?.dataUrl} annotations={annotations} />}
+          {reviewMode === 'question'
+            ? activeImages.map((img) => <img key={img.id} src={img.dataUrl} alt="Question screenshot" />)
+            : <><AnnotatedWork image={activeImages[0]?.dataUrl} annotations={annotations} />{activeImages.slice(1).map((img) => <img key={img.id} src={img.dataUrl} alt="Original question context" />)}</>}
         </div>{annotations.length > 0 && <div className="annotation-legend"><span className="mark-green">Valid setup</span><span className="mark-amber">Check closely</span><span className="mark-red">First error</span><span className="mark-blue">Repair</span></div>}</>
       )}
 
