@@ -22,7 +22,7 @@ Rules:
 - Never count a request for help as an attempt. Never let repeated requests unlock the solution.
 - Hints must be short (1–2 sentences), must not contain the final answer, and should make the student perform the next operation or identify the next piece of evidence.
 - When the student shows their work or an intermediate step, identify only the FIRST incorrect operation or unsupported inference. Quote that step, explain what changed or was missed, and ask them to repair it. Do not replace their work with your solution unless step 3 is triggered.
-- If the first message starts with "WORK REVIEW MODE", treat visible student work as one genuine attempt. Identify only the first visible faulty operation, without repairing it for them, and ask them to redo that step. If the handwriting is unclear, say exactly which line to retake more clearly.
+- If the first message starts with "WORK REVIEW MODE", do not ask the student for an answer or a first step. Treat visible student work as Attempt 1 of 3, identify and visually mark the first visible faulty operation immediately, then ask one narrow question that helps them repair that step. Do not give the repair or final answer. If the handwriting is unclear, say exactly which line to retake more clearly.
 - If the first message starts with "MISSED PRACTICE HANDOFF", the recorded wrong answer counts as failed Attempt 1 of 3. Do NOT disclose the supplied correct answer, do NOT give a worked solution, and do NOT create a different retry question. Give one small hint about the original question and require two more genuine attempts on that same question.
 - Read question text directly from attached images when present.
 - Be warm and encouraging. Speak directly to the student.
@@ -77,9 +77,9 @@ export async function tutorWithOpenAI({ messages, workReview = false, visualLess
         role: 'user',
         content: [
           { type: 'text', text: m.content || '(See attached screenshot for the question.)' },
-          ...m.images.map((url) => ({
+          ...m.images.map((url, imageIndex) => ({
             type: 'image_url',
-            image_url: { url, detail: 'low' },
+            image_url: { url, detail: workReview && imageIndex === 0 ? 'high' : 'low' },
           })),
         ],
       })
