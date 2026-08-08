@@ -53,13 +53,19 @@ export default function SocraticTutor() {
   const [visualSteps, setVisualSteps] = useState([])
   const [questionFocus, setQuestionFocus] = useState({ subject: '', topic: '' })
   const [similarSource, setSimilarSource] = useState({ sourceQuestion: '', sourceImage: '', subject: '', topic: '' })
+  const [isWorkReviewSession, setIsWorkReviewSession] = useState(false)
+  const [sessionImages, setSessionImages] = useState([])
   const chatEndRef = useRef(null)
   const inputRef = useRef(null)
   const startedPracticeRef = useRef(false)
 
   const workImages = reviewMode === 'draw' && drawnWork ? [{ id: 'drawn-work', dataUrl: drawnWork }] : images
   const activeImages = reviewMode === 'question' ? workImages : [...workImages, ...contextImages]
-  const hasQuestion = reviewMode === 'question' ? questionText.trim() || workImages.length > 0 : workImages.length > 0
+  const hasWorkImage = workImages.length > 0
+  const hasQuestionContext = questionText.trim().length > 0 || contextImages.length > 0
+  const hasQuestion = reviewMode === 'question'
+    ? questionText.trim() || workImages.length > 0
+    : hasWorkImage && hasQuestionContext
   const hasAskedForAnswer = messages.some((m) => m.role === 'assistant')
   const studentReplies = messages.filter((m, i) => m.role === 'user' && i > 0).length
   const awaitingAnswer = started && hasAskedForAnswer && studentReplies === 0
@@ -77,7 +83,14 @@ export default function SocraticTutor() {
     setBusy(true)
     setError('')
     try {
-      const { message, annotations: nextAnnotations, concept: nextConcept, retryPrompt: nextRetryPrompt, steps: nextSteps } = await sendTutorMessage({ messages: nextMessages, workReview: options.workReview, visualLesson: options.visualLesson })
+      const payload = {
+        messages: nextMessages,
+        workReview: options.workReview,
+        visualLesson: options.visualLesson,
+        questionText: options.questionText ?? questionText.trim(),
+        sessionImages: options.sessionImages ?? (isWorkReviewSession ? sessionImages : []),
+      }
+      const { message, annotations: nextAnnotations, concept: nextConcept, retryPrompt: nextRetryPrompt, steps: nextSteps } = await sendTutorMessage(payload)
       setMessages([...nextMessages, { role: 'assistant', content: message }])
       if (nextAnnotations?.length) setAnnotations(nextAnnotations)
       if (nextConcept) setConcept(nextConcept)
@@ -127,16 +140,20 @@ export default function SocraticTutor() {
 
     const sourceImage = reviewMode === 'question' ? images[0]?.dataUrl : contextImages[0]?.dataUrl
     setSimilarSource({ sourceQuestion: questionText.trim(), sourceImage: sourceImage || '', subject: questionFocus.subject, topic: questionFocus.topic })
+    const isWorkReview = reviewMode !== 'question'
+    const imageUrls = activeImages.map((img) => img.dataUrl)
+    setIsWorkReviewSession(isWorkReview)
+    setSessionImages(isWorkReview ? imageUrls : [])
     const first = {
       role: 'user',
       content: reviewMode === 'question'
         ? (questionText.trim() || '(Screenshot attached — see image.)')
         : `WORK REVIEW MODE. Image 1 is the student's handwritten work and is the ONLY image you should annotate. Any later image is the original SAT question for context only; use it to judge the work, but never annotate it. ${questionText.trim() || 'Review the handwritten work in Image 1 and identify the first step to revisit.'}`,
-      images: activeImages.map((img) => img.dataUrl),
+      images: imageUrls,
     }
     setStarted(true)
     setMessages([first])
-    await callTutor([first], { workReview: reviewMode !== 'question' })
+    await callTutor([first], { workReview: isWorkReview, questionText: questionText.trim(), sessionImages: imageUrls })
   }
 
   async function handleSend(text) {
@@ -146,7 +163,7 @@ export default function SocraticTutor() {
     const next = [...messages, { role: 'user', content: trimmed }]
     setMessages(next)
     setInput('')
-    await callTutor(next)
+    await callTutor(next, isWorkReviewSession ? { workReview: true } : {})
   }
 
   function handleSubmit(e) {
@@ -181,6 +198,8 @@ export default function SocraticTutor() {
     setVisualSteps([])
     setQuestionFocus({ subject: '', topic: '' })
     setSimilarSource({ sourceQuestion: '', sourceImage: '', subject: '', topic: '' })
+    setIsWorkReviewSession(false)
+    setSessionImages([])
   }
 
   if (!started) {
@@ -205,13 +224,13 @@ export default function SocraticTutor() {
 
             <section>
               <label className="field">
-                {reviewMode === 'question' ? 'Question text' : 'Original SAT question'} {activeImages.length > 0 ? '(optional)' : ''}
+                {reviewMode === 'question' ? 'Question text' : 'Original SAT question'} {reviewMode === 'question' && activeImages.length > 0 ? '(optional)' : reviewMode !== 'question' ? '(required)' : ''}
                 <textarea
                   rows={5}
                   placeholder={
-                    images.length > 0
+                    reviewMode === 'question' && images.length > 0
                     ? 'Add the original question or context…'
-                    : reviewMode === 'question' ? 'Paste or type the full question…' : 'Paste the full problem, answer choices, and any diagram details…'
+                    : reviewMode === 'question' ? 'Paste or type the full question…' : 'Paste the full problem text — the tutor compares your steps against this…'
                   }
                   value={questionText}
                   onChange={(e) => setQuestionText(e.target.value)}
@@ -219,8 +238,8 @@ export default function SocraticTutor() {
               </label>
 
               {reviewMode !== 'question' && <section className="tutor-question-context">
-                <div className="upload-section-label"><span>Original question screenshot</span><span className="upload-optional">optional context</span></div>
-                <p>Attach the printed question separately from your work so the tutor can compare your steps to the problem.</p>
+                <div className="upload-section-label"><span>Original question screenshot</span><span className="upload-optional">{questionText.trim() ? 'optional if text above is complete' : 'required if no question text'}</span></div>
+                <p>The tutor compares your handwritten steps to the original question. Provide the question text or a screenshot so setup errors like wrong coefficients get flagged.</p>
                 <ImageDropzone images={contextImages} onChange={setContextImages} maxImages={1} />
               </section>}
 
@@ -233,9 +252,12 @@ export default function SocraticTutor() {
                     Starting…
                   </>
                 ) : (
-                  reviewMode === 'question' ? 'Start session' : 'Review my work'
+                  reviewMode === 'question' ? 'Start session' : hasQuestionContext ? 'Review my work' : 'Add question context first'
                 )}
               </button>
+              {reviewMode !== 'question' && !hasQuestionContext && hasWorkImage && (
+                <p className="upload-error" style={{ marginTop: 8 }}>Paste the question text or upload a screenshot of the original problem so the tutor can verify your equation setup.</p>
+              )}
             </section>
           </div>
         </form>

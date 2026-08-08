@@ -140,6 +140,12 @@ function validateTutorInput(body) {
   if (body.messages.some((message) => Array.isArray(message.images) && message.images.some((image) => typeof image !== 'string' || image.length > 2_800_000))) {
     throw new Error('A screenshot exceeds the 2 MB limit.')
   }
+  if (body.questionText && typeof body.questionText === 'string' && body.questionText.length > 10000) {
+    throw new Error('Question text exceeds maximum allowed length.')
+  }
+  if (Array.isArray(body.sessionImages) && (body.sessionImages.length > 2 || body.sessionImages.some((image) => typeof image !== 'string' || image.length > 2_800_000))) {
+    throw new Error('Session images exceed limits.')
+  }
 }
 
 app.post('/api/analyze', clerkAuthMiddleware, enforceUsageBudget, async (req, res) => {
