@@ -2,7 +2,7 @@ import React, { useEffect, useRef, useState } from 'react'
 import ImageDropzone from '../Upload/ImageDropzone.jsx'
 import RichText from '../RichText.jsx'
 import { sendTutorMessage } from '../../lib/tutorClient.js'
-import { useSearchParams } from '../../lib/router.jsx'
+import { Link, useSearchParams } from '../../lib/router.jsx'
 import { PRACTICE_BANK } from '../../data/practiceBank.js'
 import WorkPad from './WorkPad.jsx'
 import AnnotatedWork from './AnnotatedWork.jsx'
@@ -50,6 +50,7 @@ export default function SocraticTutor() {
   const [concept, setConcept] = useState(null)
   const [retryPrompt, setRetryPrompt] = useState(null)
   const [visualSteps, setVisualSteps] = useState([])
+  const [questionFocus, setQuestionFocus] = useState({ subject: '', topic: '' })
   const chatEndRef = useRef(null)
   const inputRef = useRef(null)
   const startedPracticeRef = useRef(false)
@@ -98,6 +99,7 @@ export default function SocraticTutor() {
           ? { role: 'user', content: `${handoff.prompt}${choices ? `\n\nChoices:\n${choices}` : ''}\n\nMy answer is ${handoff.studentAnswer}. My reasoning was:` }
         : { role: 'user', content: `${handoff.prompt}${choices ? `\n\nChoices:\n${choices}` : ''}` }
       setQuestionText(handoff.prompt)
+      setQuestionFocus({ subject: handoff.subject || '', topic: handoff.topic || '' })
       setStarted(true)
       setMessages([first])
       callTutor([first])
@@ -108,6 +110,7 @@ export default function SocraticTutor() {
     startedPracticeRef.current = true
     const first = { role: 'user', content: practiceQuestion.prompt }
     setQuestionText(practiceQuestion.prompt)
+    setQuestionFocus({ subject: practiceQuestion.subject, topic: practiceQuestion.topic })
     setStarted(true)
     setMessages([first])
     callTutor([first])
@@ -155,6 +158,7 @@ export default function SocraticTutor() {
     setConcept(null)
     setRetryPrompt(null)
     setVisualSteps([])
+    setQuestionFocus({ subject: '', topic: '' })
   }
 
   if (!started) {
@@ -276,6 +280,9 @@ export default function SocraticTutor() {
               <button type="button" className="btn btn-ghost btn-sm" onClick={() => handleSend('I need a hint')}>
                 I need a hint
               </button>
+              <Link to={`/app/practice?${new URLSearchParams({ ...(questionFocus.subject ? { subject: questionFocus.subject } : {}), ...(questionFocus.topic ? { focus: questionFocus.topic } : {}) }).toString()}`} className="btn btn-ghost btn-sm">
+                {questionFocus.topic ? `Practice similar ${questionFocus.topic} questions` : 'Practice similar questions'}
+              </Link>
             </div>
           )}
 
