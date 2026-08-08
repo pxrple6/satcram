@@ -58,9 +58,6 @@ function attemptState(messages) {
  */
 export async function tutorWithOpenAI({ messages, workReview = false, visualLesson = false }, apiKey) {
   const gate = attemptState(messages)
-  if (!workReview && gate.isInitialTurn) {
-    return { message: 'Before I help, give me both your answer and your first reasoning step. Your best honest attempt is enough to begin.' }
-  }
   if (!workReview && gate.isInitialMiss) {
     return { message: '**Attempt 1 of 3 recorded.** The solution is locked. Explain the rule, relationship, or evidence you used, then make a different second attempt on this same question.' }
   }
