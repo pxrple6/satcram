@@ -124,7 +124,9 @@ export default function SocraticTutor() {
 
     const first = {
       role: 'user',
-      content: reviewMode === 'question' ? (questionText.trim() || '(Screenshot attached — see image.)') : `WORK REVIEW MODE. ${questionText.trim() || 'Review the handwritten work in the image and identify the first step to revisit.'}`,
+      content: reviewMode === 'question'
+        ? (questionText.trim() || '(Screenshot attached — see image.)')
+        : `WORK REVIEW MODE. Image 1 is the student's handwritten work and is the ONLY image you should annotate. Any later image is the original SAT question for context only; use it to judge the work, but never annotate it. ${questionText.trim() || 'Review the handwritten work in Image 1 and identify the first step to revisit.'}`,
       images: activeImages.map((img) => img.dataUrl),
     }
     setStarted(true)
