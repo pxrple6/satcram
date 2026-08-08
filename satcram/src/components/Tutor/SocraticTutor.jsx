@@ -2,11 +2,11 @@ import React, { useEffect, useRef, useState } from 'react'
 import ImageDropzone from '../Upload/ImageDropzone.jsx'
 import RichText from '../RichText.jsx'
 import { sendTutorMessage } from '../../lib/tutorClient.js'
-import { Link, useSearchParams } from '../../lib/router.jsx'
+import { useSearchParams } from '../../lib/router.jsx'
 import { PRACTICE_BANK } from '../../data/practiceBank.js'
 import WorkPad from './WorkPad.jsx'
 import AnnotatedWork from './AnnotatedWork.jsx'
-import { takeTutorHandoff } from '../../lib/tutorHandoff.js'
+import { saveTutorHandoff, takeTutorHandoff } from '../../lib/tutorHandoff.js'
 
 function ChatBubble({ role, text }) {
   const isTutor = role === 'assistant'
@@ -52,6 +52,7 @@ export default function SocraticTutor() {
   const [retryPrompt, setRetryPrompt] = useState(null)
   const [visualSteps, setVisualSteps] = useState([])
   const [questionFocus, setQuestionFocus] = useState({ subject: '', topic: '' })
+  const [similarSource, setSimilarSource] = useState({ sourceQuestion: '', sourceImage: '', subject: '', topic: '' })
   const chatEndRef = useRef(null)
   const inputRef = useRef(null)
   const startedPracticeRef = useRef(false)
@@ -102,6 +103,7 @@ export default function SocraticTutor() {
         : { role: 'user', content: `${handoff.prompt}${choices ? `\n\nChoices:\n${choices}` : ''}` }
       setQuestionText(handoff.prompt)
       setQuestionFocus({ subject: handoff.subject || '', topic: handoff.topic || '' })
+      setSimilarSource({ sourceQuestion: handoff.prompt, sourceImage: handoff.sourceImage || '', subject: handoff.subject || '', topic: handoff.topic || '' })
       setStarted(true)
       setMessages([first])
       callTutor([first])
@@ -113,6 +115,7 @@ export default function SocraticTutor() {
     const first = { role: 'user', content: practiceQuestion.prompt }
     setQuestionText(practiceQuestion.prompt)
     setQuestionFocus({ subject: practiceQuestion.subject, topic: practiceQuestion.topic })
+    setSimilarSource({ sourceQuestion: practiceQuestion.prompt, sourceImage: '', subject: practiceQuestion.subject, topic: practiceQuestion.topic })
     setStarted(true)
     setMessages([first])
     callTutor([first])
@@ -122,6 +125,8 @@ export default function SocraticTutor() {
     e.preventDefault()
     if (!hasQuestion || busy) return
 
+    const sourceImage = reviewMode === 'question' ? images[0]?.dataUrl : contextImages[0]?.dataUrl
+    setSimilarSource({ sourceQuestion: questionText.trim(), sourceImage: sourceImage || '', subject: questionFocus.subject, topic: questionFocus.topic })
     const first = {
       role: 'user',
       content: reviewMode === 'question'
@@ -149,6 +154,17 @@ export default function SocraticTutor() {
     handleSend(input)
   }
 
+  function openSimilarPractice() {
+    const id = saveTutorHandoff(`similar-${Date.now()}`, {
+      sourceQuestion: similarSource.sourceQuestion || questionText.trim(),
+      sourceImage: similarSource.sourceImage,
+      subject: similarSource.subject || questionFocus.subject || 'Math',
+      topic: similarSource.topic || questionFocus.topic || 'Submitted-question concept',
+    })
+    window.history.pushState({}, '', `/app/similar?handoff=${encodeURIComponent(id)}`)
+    window.dispatchEvent(new Event('satcram:navigate'))
+  }
+
   function resetSession() {
     setStarted(false)
     setMessages([])
@@ -164,6 +180,7 @@ export default function SocraticTutor() {
     setRetryPrompt(null)
     setVisualSteps([])
     setQuestionFocus({ subject: '', topic: '' })
+    setSimilarSource({ sourceQuestion: '', sourceImage: '', subject: '', topic: '' })
   }
 
   if (!started) {
@@ -293,9 +310,9 @@ export default function SocraticTutor() {
               <button type="button" className="btn btn-ghost btn-sm" onClick={() => handleSend('I need a hint')}>
                 I need a hint
               </button>
-              <Link to={`/app/practice?${new URLSearchParams({ ...(questionFocus.subject ? { subject: questionFocus.subject } : {}), ...(questionFocus.topic ? { focus: questionFocus.topic } : {}) }).toString()}`} className="btn btn-ghost btn-sm">
+              <button type="button" className="btn btn-ghost btn-sm" onClick={openSimilarPractice}>
                 {questionFocus.topic ? `Practice similar ${questionFocus.topic} questions` : 'Practice similar questions'}
-              </Link>
+              </button>
             </div>
           )}
 

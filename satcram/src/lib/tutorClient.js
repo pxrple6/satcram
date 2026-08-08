@@ -34,6 +34,9 @@ export async function sendTutorMessage(input) {
     window.dispatchEvent(new Event('satcram:usage-updated'))
     return result
   } catch (err) {
+    if (input.workReview) {
+      throw new Error(`AI work review could not run, so your page was not analyzed or highlighted. ${err.message}`)
+    }
     console.warn('[SATcram] Tutor API unavailable, using offline mock:', err.message)
     return mockTutorReply(input)
   }

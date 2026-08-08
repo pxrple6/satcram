@@ -11,6 +11,7 @@ import StudyPlan from './components/Plan/StudyPlan.jsx'
 import SocraticTutor from './components/Tutor/SocraticTutor.jsx'
 import MistakeJournal from './components/Journal/MistakeJournal.jsx'
 import PracticeDeck from './components/Practice/PracticeDeck.jsx'
+import SimilarPractice from './components/Practice/SimilarPractice.jsx'
 import VisualLessons from './components/Lessons/VisualLessons.jsx'
 import Home from './pages/Home.jsx'
 import Login from './pages/Login.jsx'
@@ -68,6 +69,7 @@ export default function App() {
       '/app/dna': <MistakeDNA />,
       '/app/plan': <StudyPlan />,
       '/app/practice': <PracticeDeck />,
+      '/app/similar': <SimilarPractice />,
       '/app/lessons': <VisualLessons />,
       '/app/tutor': <SocraticTutor />,
       '/app/journal': <MistakeJournal />,
